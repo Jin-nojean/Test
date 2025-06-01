@@ -1528,7 +1528,7 @@ elif menu == "FuelEU Maritime":
                 "연료종류": fuel, "LHV": props["LHV"], "GFI": props["GFI"],
                 "역내": delta1_in, "역외": 0.0
             }]
-                result2 = calculate_fueleu_result(temp_data, fuel_defaults_FEUM)
+                result2 = calculate_fueleu_result(temp_data)
                 delta2_in = calculate_pooling_ton_by_fuel(result2, fuel_type=fuel, props=props)
 
                 total_in = round(delta1_in + delta2_in, 4)
