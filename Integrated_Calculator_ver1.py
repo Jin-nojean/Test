@@ -383,7 +383,7 @@ def calculate_fueleu_result(fuel_data: list[dict]) -> pd.DataFrame:
 
     # 계산 기준 발열량 계산
     def calc_adjusted_outside(row):
-        if row["연료종류"] in ["LNG", "Bio(Fame)"]:
+        if row["연료종류"] in ["LNG", "Bio(Fame)", "LPG(Propane)", "LPG(Butane)"]:
             return row["역외"] * row["LHV"]  # 100% 반영
         else:
             return row["역외"] * row["LHV"] * 0.5  # 50% 반영
