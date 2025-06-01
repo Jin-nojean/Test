@@ -411,7 +411,7 @@ def calculate_fueleu_result(fuel_data: list[dict]) -> pd.DataFrame:
     penalty_emission_dict = {}
 
     for row, used_energy in selected_rows:
-        fuel = row["연료종류"]
+        fuel = row["연료종류"].strip()
         gfi = row["GFI"]
         emission = used_energy * gfi / 1_000_000
         penalty_lhv_dict[fuel] = used_energy
