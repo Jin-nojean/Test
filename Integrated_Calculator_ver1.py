@@ -11,265 +11,22 @@ st.set_page_config(page_title="GFI & FuelEU 계산기", layout="centered")
 menu = st.sidebar.radio("계산 항목 선택", ["GFI 계산기(IMO 중기조치)", "FuelEU Maritime"])
 #menu = st.sidebar.radio("계산 항목 선택", ["GFI 계산기", "FuelEU Maritime", "CII (준비 중)", "EU ETS (준비 중)"])
 
-#GFI 계산기용 GFI 연료 기본값 생성 함수
-def generate_GFI_fuel_defaults():
-    # GFI 계산기용 GWP 값 / FeulEU Maritime 값 사용
-    GFI_gwp_factors = {
-        "CO2": 1,
-        "CH4": 25,
-        "N2O": 298
-    }
-    # GFI 계산기용 TtW 계수 / MEPC80차 기준
-    GFI_ttw_factors = {
-        "VLSFO": {"CO2": 3.114, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0402, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "HSFO": {"CO2": 3.114, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0402, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "LSMGO": {"CO2": 3.206, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0427, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "LNG": {"CO2": 2.75, "CH4": 0, "N2O": 0.00011, "LCV": 0.0480, "SLIP": 0.0015, "RWD": 0, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
-        "LPG(Propane)": {"CO2": 3.0, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0463, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "LPG(Butane)": {"CO2": 3.03, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0457, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "Bio(Fame)": {"CO2": 2.834, "CH4": 0, "N2O": 0, "LCV": 0.0372, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0} #바이오디젤은 RED II 기준 / 아직 안나왔으니
-    }
-    # GFI 계산기용 WtT 계수
-    GFI_wtt_factors = {
-        "VLSFO": 16.8,
-        "HSFO": 14.9,
-        "LSMGO": 17.7,
-        "LNG": 18.5,#LNG는 RED II 기준 / 아직 안나왔으니
-        "LPG(Propane)": 7.8,#LPG는 RED II 기준 / 아직 안나왔으니
-        "LPG(Butane)": 7.8,#LPG는 RED II 기준 / 아직 안나왔으니
-        "Bio(Fame)": 20.8 - 2.834 / 0.0372# WtT값이 일단 안나옴
-    }
-    # GFI WtW 계수 함수 / 슬립 처리는 우선 FuelEU Maritime과 동일하게 사용
-    def calculate_ttw(fuel_type: str) -> float:
-        ttw = GFI_ttw_factors[fuel_type]
-        gwp = GFI_gwp_factors
-        LCV = ttw["LCV"]
-        slip = ttw["SLIP"]
-        
-        if slip == 0:
-            # 기본 연소 배출량
-            co2eq = ttw["CO2"] * gwp["CO2"] + ttw["CH4"] * gwp["CH4"] + ttw["N2O"] * gwp["N2O"]
-            return round(co2eq / LCV, 5)
-        # Slip 처리
-        elif slip > 0:
-            combustion = (
-            ttw["CO2"] * gwp["CO2"] + ttw["CH4"] * gwp["CH4"] + ttw["N2O"] * gwp["N2O"])
-            # 슬립분
-            slip_CO2 = ttw.get("CO2_slip", 0)
-            slip_CH4 = ttw.get("CH4_slip", 0)
-            slip_N2O = ttw.get("N2O_slip", 0)
-            slip_emission = (slip_CO2 * gwp["CO2"] + slip_CH4 * gwp["CH4"] + slip_N2O * gwp["N2O"])
-            total_emission = (1 - slip) * combustion + slip * slip_emission
-            return round(total_emission / LCV, 5)
-        else:
-            raise ValueError(f"Unexpected slip value: {slip}")
+# 연료 기본값 (GFI 계산기와 FuelEU 계산기 공통)
+fuel_defaults = {
+    "VLSFO": {"LHV": 40500, "WtW": 91.60123},
+    "HSFO":  {"LHV": 40500, "WtW": 91.60123},
+    "LSMGO": {"LHV": 42700, "WtW": 90.63185},
+    "LNG":   {"LHV": 49100, "WtW": 76.12916},
+    "B24":   {"LHV": 39708, "WtW": 74.28817013},
+    "B30":   {"LHV": 39510, "WtW": 69.85145205},
+    "B100":  {"LHV": 37200, "WtW": 14.60},
+}
 
-    def calculate_wtw(fuel_type: str) -> float:
-        return round(GFI_wtt_factors.get(fuel_type, 0) + calculate_ttw(fuel_type), 5)
-
-    def calculate_mixed_fuel(fossil_name, bio_name, fossil_ratio):
-        bio_ratio = 1 - fossil_ratio
-        LHV_fossil = round(GFI_ttw_factors[fossil_name]["LCV"] * 1_000_000, 0)
-        LHV_bio = round(GFI_ttw_factors[bio_name]["LCV"] * 1_000_000, 0)
-
-        gwp = GFI_gwp_factors
-        fossil = GFI_ttw_factors[fossil_name]
-        bio = GFI_ttw_factors[bio_name]
-
-        GWP_fossil = fossil["CO2"] * gwp["CO2"] + fossil["CH4"] * gwp["CH4"] + fossil["N2O"] * gwp["N2O"]
-        GWP_bio = bio["CO2"] * gwp["CO2"] + bio["CH4"] * gwp["CH4"] + bio["N2O"] * gwp["N2O"]
-
-        LHV_mix = round(fossil_ratio * LHV_fossil + bio_ratio * LHV_bio, 0)
-        WtW_mix = (fossil_ratio * GWP_fossil + bio_ratio * GWP_bio) / LHV_mix * 1_000_000
-        return {"LHV": LHV_mix, "WtW": round(WtW_mix, 8)}
-
-    # 최종 연료 기본값 구성
-    fuel_defaults = {}
-    for fuel in GFI_ttw_factors:
-        LCV = GFI_ttw_factors[fuel]["LCV"]
-        LHV = round(LCV * 1_000_000, 0)
-        WtW = calculate_wtw(fuel)
-        fuel_defaults[fuel] = {"LHV": LHV, "WtW": WtW}
-
-    fuel_defaults.update({
-        "B24(HSFO)": calculate_mixed_fuel("HSFO", "Bio(Fame)", 0.76),
-        "B30(HSFO)": calculate_mixed_fuel("HSFO", "Bio(Fame)", 0.7),
-        "B24(VLSFO)": calculate_mixed_fuel("VLSFO", "Bio(Fame)", 0.76),
-        "B30(VLSFO)": calculate_mixed_fuel("VLSFO", "Bio(Fame)", 0.7)
-    })
-
-    return fuel_defaults
-
-# FuelEU Maritime용 연료 기본값 생성 함수
-def generate_FEUM_fuel_defaults():
-    # FuelEU Maritime용 GWP 값
-    FEUM_gwp_factors = {
-        "CO2": 1,
-        "CH4": 25,
-        "N2O": 298
-    }
-
-    # TtW 계수 (RED II)
-    FEUM_ttw_factors = {
-        "VLSFO": {"CO2": 3.114, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0405, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "HSFO": {"CO2": 3.114, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0405, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "LSMGO": {"CO2": 3.206, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0427, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "LNG": {"CO2": 2.75, "CH4": 0, "N2O": 0.00011, "LCV": 0.0491, "SLIP": 0.002, "RWD": 0, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
-        "LPG(Propane)": {"CO2": 3.0, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0460, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "LPG(Butane)": {"CO2": 3.03, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0460, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "Bio(Fame)": {"CO2": 2.834, "CH4": 0, "N2O": 0, "LCV": 0.0370, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0}
-    }
-
-    # WtT 계수 (RED II)
-    FEUM_wtt_factors = {
-        "VLSFO": 13.5,
-        "HSFO": 13.5,
-        "LSMGO": 14.4,
-        "LNG": 18.5,
-        "LPG(Propane)": 7.8,
-        "LPG(Butane)": 7.8,
-        "Bio(Fame)": 14.6 - 2.834 / 0.037
-    }
-
-    def calculate_ttw(fuel_type: str) -> float:
-        ttw = FEUM_ttw_factors[fuel_type]
-        gwp = FEUM_gwp_factors
-        LCV = ttw["LCV"]
-        slip = ttw["SLIP"]
-
-        if slip == 0:
-            co2eq = ttw["CO2"] * gwp["CO2"] + ttw["CH4"] * gwp["CH4"] + ttw["N2O"] * gwp["N2O"]
-            return round(co2eq / LCV, 5)
-        elif slip > 0:
-            combustion = ttw["CO2"] * gwp["CO2"] + ttw["CH4"] * gwp["CH4"] + ttw["N2O"] * gwp["N2O"]
-            slip_CO2 = ttw.get("CO2_slip", 0)
-            slip_CH4 = ttw.get("CH4_slip", 0)
-            slip_N2O = ttw.get("N2O_slip", 0)
-            slip_emission = (slip_CO2 * gwp["CO2"] + slip_CH4 * gwp["CH4"] + slip_N2O * gwp["N2O"])
-            total_emission = (1 - slip) * combustion + slip * slip_emission
-            return round(total_emission / LCV, 5)
-        else:
-            raise ValueError(f"Unexpected slip value: {slip}")
-
-    def calculate_wtw(fuel_type: str) -> float:
-        return round(FEUM_wtt_factors.get(fuel_type, 0) + calculate_ttw(fuel_type), 5)
-
-    def calculate_mixed_fuel(fossil_name, bio_name, fossil_ratio):
-        bio_ratio = 1 - fossil_ratio
-        LHV_fossil = round(FEUM_ttw_factors[fossil_name]["LCV"] * 1_000_000, 0)
-        LHV_bio = round(FEUM_ttw_factors[bio_name]["LCV"] * 1_000_000, 0)
-
-        gwp = FEUM_gwp_factors
-        fossil = FEUM_ttw_factors[fossil_name]
-        bio = FEUM_ttw_factors[bio_name]
-
-        GWP_fossil = fossil["CO2"] * gwp["CO2"] + fossil["CH4"] * gwp["CH4"] + fossil["N2O"] * gwp["N2O"]
-        GWP_bio = bio["CO2"] * gwp["CO2"] + bio["CH4"] * gwp["CH4"] + bio["N2O"] * gwp["N2O"]
-
-        LHV_mix = round(fossil_ratio * LHV_fossil + bio_ratio * LHV_bio, 0)
-        WtW_mix = (fossil_ratio * GWP_fossil + bio_ratio * GWP_bio) / LHV_mix * 1_000_000
-        return {"LHV": LHV_mix, "WtW": round(WtW_mix, 8)}
-
-    # 기본 연료 정의
-    fuel_defaults = {}
-    for fuel in FEUM_ttw_factors:
-        LCV = FEUM_ttw_factors[fuel]["LCV"]
-        LHV = round(LCV * 1_000_000, 0)
-        WtW = calculate_wtw(fuel)
-        fuel_defaults[fuel] = {"LHV": LHV, "WtW": WtW}
-
-    # 혼합연료 추가
-    fuel_defaults.update({
-        "B24(HSFO)": calculate_mixed_fuel("HSFO", "Bio(Fame)", 0.76),
-        "B30(HSFO)": calculate_mixed_fuel("HSFO", "Bio(Fame)", 0.7),
-        "B24(VLSFO)": calculate_mixed_fuel("VLSFO", "Bio(Fame)", 0.76),
-        "B30(VLSFO)": calculate_mixed_fuel("VLSFO", "Bio(Fame)", 0.7)
-    })
-
-    return fuel_defaults
-
-# 연료 기본값 (GFI & FEUM 개별)
-fuel_defaults_GFI = generate_GFI_fuel_defaults()
-fuel_defaults_FEUM = generate_FEUM_fuel_defaults()
-
-#GFI 혼합 연료 합치기
-def expand_mixed_fuel_GFI(fuel_data: list[dict]) -> list[dict]:
-    expanded_rows = []
-
-    for row in fuel_data:
-        fuel_type = row["연료종류"]
-
-        if fuel_type.startswith("B24("):
-            base_fuel = fuel_type[4:-1]  # VLSFO or HSFO
-            expanded_rows.append({
-                "연료종류": base_fuel,
-                "LHV": fuel_defaults_GFI[base_fuel]["LHV"],
-                "WtW": fuel_defaults_GFI[base_fuel]["WtW"],
-                "사용량": row["사용량"] * 0.76
-            })
-            expanded_rows.append({
-                "연료종류": "Bio(Fame)",
-                "LHV": fuel_defaults_GFI["Bio(Fame)"]["LHV"],
-                "WtW": fuel_defaults_GFI["Bio(Fame)"]["WtW"],
-                "사용량": row["사용량"] * 0.24
-            })
-
-        elif fuel_type.startswith("B30("):
-            base_fuel = fuel_type[4:-1]
-            expanded_rows.append({
-                "연료종류": base_fuel,
-                "LHV": fuel_defaults_GFI[base_fuel]["LHV"],
-                "WtW": fuel_defaults_GFI[base_fuel]["WtW"],
-                "사용량": row["사용량"] * 0.7
-            })
-            expanded_rows.append({
-                "연료종류": "Bio(Fame)",
-                "LHV": fuel_defaults_GFI["Bio(Fame)"]["LHV"],
-                "WtW": fuel_defaults_GFI["Bio(Fame)"]["WtW"],
-                "사용량": row["사용량"] * 0.3
-            })
-
-        else:
-            if fuel_type == "B100":
-                fuel_type = "Bio(Fame)"
-
-            expanded_rows.append({
-                "연료종류": fuel_type,
-                "LHV": row.get("LHV", fuel_defaults_GFI.get(fuel_type, {}).get("LHV", 0)),
-                "WtW": row.get("WtW", fuel_defaults_GFI.get(fuel_type, {}).get("WtW", 0)),
-                "사용량": row["사용량"]
-            })
-
-    return expanded_rows
-
-#GFI 연료 합치기
-def get_merged_gfi_data(fuel_data_list):
-    grouped = defaultdict(lambda: {"LHV": 0.0, "WtW": 0.0, "사용량": 0.0})
-    
-    for row in fuel_data_list:
-        fuel_type = "Bio(Fame)" if row["연료종류"] == "B100" else row["연료종류"]
-        key = (fuel_type, row["LHV"], row["WtW"])
-        grouped[key]["사용량"] += row["사용량"]
-        grouped[key]["LHV"] = row["LHV"]
-        grouped[key]["WtW"] = row["WtW"]
-
-    merged_list = []
-    for (fuel_type, lhv, wtw), values in grouped.items():
-        merged_list.append({
-            "연료종류": fuel_type,
-            "LHV": lhv,
-            "WtW": wtw,
-            "사용량": values["사용량"]
-        })
-    return merged_list
-
-#FEUM 연료 합치기
+#입력 연료들 합치기
 def get_merged_fueleu_data(fuel_data_list):
     grouped = defaultdict(lambda: {"역내": 0.0, "역외": 0.0, "LHV": 0.0, "GFI": 0.0})
-    
     for row in fuel_data_list:
-        fuel_type = "Bio(Fame)" if row["연료종류"] == "B100" else row["연료종류"]
-        key = (fuel_type, row["LHV"], row["GFI"])
+        key = (row["연료종류"], row["LHV"], row["GFI"])
         grouped[key]["역내"] += row["역내"]
         grouped[key]["역외"] += row["역외"]
         grouped[key]["LHV"] = row["LHV"]
@@ -286,88 +43,32 @@ def get_merged_fueleu_data(fuel_data_list):
         })
     return merged_list
 
-#Surplus 가치를 연도별로 반영
-def get_vlsfo_penalty_per_ton(year: int) -> float:
-    """
-    입력된 연도에 해당하는 VLSFO 1톤당 벌금 금액 (€)
-    """
-    reduction_steps = [
-        (2025, 2029, 0.98),
-        (2030, 2034, 0.94),
-        (2035, 2039, 0.855),
-        (2040, 2044, 0.69),
-        (2045, 2049, 0.38),
-        (2050, 2050, 0.2)
-    ]
-    
-    base_standard = 91.16
-    vlsfo_info = fuel_defaults_FEUM["VLSFO"]
-    gfi = vlsfo_info["WtW"]
-    lhv = vlsfo_info["LHV"]
-
-    # 감축률 선택
-    for start, end, factor in reduction_steps:
-        if start <= year <= end:
-            standard = base_standard * factor
-            break
-    else:
-        return 0.0  # 해당 연도 없음
-
-    # 벌금 계산
-    delta = gfi - standard
-    if delta <= 0:
-        return 0.0
-
-    emission = delta * lhv / 1_000_000  # tCO₂eq
-    return round(emission * 2400, 2)
-
 #FuelEU Martime 계산 함수
-def calculate_fueleu_result(fuel_data: list[dict]) -> pd.DataFrame:
+def calculate_fueleu_result(fuel_data: list[dict],fuel_defaults: dict) -> dict:
+    # B24, B30 분리
     expanded_rows = []
-
     for row in fuel_data:
-        fuel_type = row["연료종류"]
-
-        if fuel_type.startswith("B24("):
-            base_fuel = fuel_type[4:-1]  # "VLSFO" or "HSFO"
+        if row["연료종류"] == "B24":
             expanded_rows.append({
-                "연료종류": base_fuel,
-                "LHV": fuel_defaults_FEUM[base_fuel]["LHV"],
-                "GFI": fuel_defaults_FEUM[base_fuel]["WtW"],
-                "역내": row["역내"] * 0.76,
-                "역외": row["역외"] * 0.76
+                "연료종류": "VLSFO", "LHV": 40500, "GFI": 91.60123,
+                "역내": row["역내"] * 0.76, "역외": row["역외"] * 0.76
             })
             expanded_rows.append({
-                "연료종류": "Bio(Fame)",
-                "LHV": fuel_defaults_FEUM["Bio(Fame)"]["LHV"],
-                "GFI": fuel_defaults_FEUM["Bio(Fame)"]["WtW"],
-                "역내": row["역내"] * 0.24,
-                "역외": row["역외"] * 0.24
+                "연료종류": "B100", "LHV": 37200, "GFI": 14.6,
+                "역내": row["역내"] * 0.24, "역외": row["역외"] * 0.24
             })
-
-        elif fuel_type.startswith("B30("):
-            base_fuel = fuel_type[4:-1]
+        elif row["연료종류"] == "B30":
             expanded_rows.append({
-                "연료종류": base_fuel,
-                "LHV": fuel_defaults_FEUM[base_fuel]["LHV"],
-                "GFI": fuel_defaults_FEUM[base_fuel]["WtW"],
-                "역내": row["역내"] * 0.70,
-                "역외": row["역외"] * 0.70
+                "연료종류": "VLSFO", "LHV": 40500, "GFI": 91.60123,
+                "역내": row["역내"] * 0.7, "역외": row["역외"] * 0.7
             })
             expanded_rows.append({
-                "연료종류": "Bio(Fame)",
-                "LHV": fuel_defaults_FEUM["Bio(Fame)"]["LHV"],
-                "GFI": fuel_defaults_FEUM["Bio(Fame)"]["WtW"],
-                "역내": row["역내"] * 0.30,
-                "역외": row["역외"] * 0.30
+                "연료종류": "B100", "LHV": 37200, "GFI": 14.6,
+                "역내": row["역내"] * 0.3, "역외": row["역외"] * 0.3
             })
-
         else:
-            if fuel_type == "B100":
-                fuel_type = "Bio(Fame)"
-
             expanded_rows.append({
-                "연료종류": fuel_type,
+                "연료종류": row["연료종류"],
                 "LHV": row["LHV"],
                 "GFI": row["GFI"],
                 "역내": row["역내"],
@@ -383,7 +84,7 @@ def calculate_fueleu_result(fuel_data: list[dict]) -> pd.DataFrame:
 
     # 계산 기준 발열량 계산
     def calc_adjusted_outside(row):
-        if row["연료종류"] in ["LNG", "Bio(Fame)", "LPG(Propane)", "LPG(Butane)"]:
+        if row["연료종류"] in ["LNG", "B100"]:
             return row["역외"] * row["LHV"]  # 100% 반영
         else:
             return row["역외"] * row["LHV"] * 0.5  # 50% 반영
@@ -411,7 +112,7 @@ def calculate_fueleu_result(fuel_data: list[dict]) -> pd.DataFrame:
     penalty_emission_dict = {}
 
     for row, used_energy in selected_rows:
-        fuel = row["연료종류"].strip()
+        fuel = row["연료종류"]
         gfi = row["GFI"]
         emission = used_energy * gfi / 1_000_000
         penalty_lhv_dict[fuel] = used_energy
@@ -490,13 +191,13 @@ def calculate_pooling_ton_by_fuel(result: dict, fuel_type: str, props: dict) -> 
     return max(round(ton, 4), 0.0)
 
 # LNG, B100, B24, B30 역내 사용량 계산
-def calculate_required_green_fuel_inside(result, fuel_type, fuel_defaults_FEUM):
+def calculate_required_green_fuel_inside(result, fuel_type, fuel_defaults):
     std = result["standard_now"]
     total_energy = result["total_energy"]
     total_emission = result["total_emission"] * 1_000_000  # tCO₂eq → gCO₂eq
 
-    lhv = fuel_defaults_FEUM[fuel_type]["LHV"]
-    gfi = fuel_defaults_FEUM[fuel_type]["WtW"]
+    lhv = fuel_defaults[fuel_type]["LHV"]
+    gfi = fuel_defaults[fuel_type]["WtW"]
 
     numerator = total_emission - std * total_energy
     denominator = lhv * (std - gfi)
@@ -513,62 +214,57 @@ def calculate_b24_b30_outside_ton(result, fuel_type):
     pb_energy = result["total_energy"]
     emission = result["total_emission"] * 1_000_000  # tCO₂eq → gCO₂eq
 
-    # Bio 성분은 항상 동일
-    bio_lhv = fuel_defaults_FEUM["Bio(Fame)"]["LHV"]
-    bio_gfi = fuel_defaults_FEUM["Bio(Fame)"]["WtW"]
+    vlsfo_lhv = fuel_defaults["VLSFO"]["LHV"]
+    vlsfo_gfi = fuel_defaults["VLSFO"]["WtW"]
+    b100_lhv = fuel_defaults["B100"]["LHV"]
+    b100_gfi = fuel_defaults["B100"]["WtW"]
 
-    # 혼합비율 및 성분 화석연료 결정
-    if fuel_type == "B24(VLSFO)":
+    if fuel_type == "B24":
         bio_ratio = 0.24
         fossil_ratio = 0.76
-        fossil_key = "VLSFO"
-    elif fuel_type == "B24(HSFO)":
-        bio_ratio = 0.24
-        fossil_ratio = 0.76
-        fossil_key = "HSFO"
-    elif fuel_type == "B30(VLSFO)":
+    elif fuel_type == "B30":
         bio_ratio = 0.30
         fossil_ratio = 0.70
-        fossil_key = "VLSFO"
-    elif fuel_type == "B30(HSFO)":
-        bio_ratio = 0.30
-        fossil_ratio = 0.70
-        fossil_key = "HSFO"
     else:
         return 0.0
 
-    fossil_lhv = fuel_defaults_FEUM[fossil_key]["LHV"]
-    fossil_gfi = fuel_defaults_FEUM[fossil_key]["WtW"]
-
-    # 계산식
     numerator = emission - std * pb_energy
-    part1 = bio_ratio * bio_lhv * (std - bio_gfi)
-    part2 = (fossil_ratio * 0.5 * fossil_lhv - bio_ratio * 0.5 * bio_lhv) * (fossil_gfi - std)
+    part1 = bio_ratio * b100_lhv * (std - b100_gfi)
+    part2 = (fossil_ratio * 0.5 * vlsfo_lhv - bio_ratio * 0.5 * b100_lhv) * (vlsfo_gfi - std)
     denominator = part1 - part2
 
-    if denominator <= 0 or numerator / denominator <= 0:
+    if denominator <= 0:
+        return 0.0
+    if numerator / denominator <= 0:
         return 0.0
 
     return round(numerator / denominator, 4)
 
-# B100 역외 사용량 첫번째 스텝
-def step1_b100_required(row1, std, total_energy, total_emission, penalty, fuel_defaults_FEUM):
+#B100 역외 사용량 첫번째 스텝
+def step1_b100_required(row1, std, total_energy, total_emission, penalty, fuel_defaults):
+    # 연료 정보
     fuel = row1["연료종류"]
     lhv = row1["LHV"]
     gfi = row1["GFI"]
     inside = row1["역내"]
     outside = row1["역외"]
 
-    b100_lhv = fuel_defaults_FEUM["Bio(Fame)"]["LHV"]
-    b100_gfi = fuel_defaults_FEUM["Bio(Fame)"]["WtW"]
+    b100_lhv = fuel_defaults["B100"]["LHV"]
+    b100_gfi = fuel_defaults["B100"]["WtW"]
 
+    # 1) 벌금 기준 에너지 (역내 100%, 역외 50%)
     fossil_energy = inside * lhv + outside * lhv * 0.5
     fossil_emission = fossil_energy * gfi
 
-    theo_b100 = fossil_energy / b100_lhv * 2 if penalty > 0 else 0
+    # 2) 이론값
+    if penalty > 0:
+        theo_b100 = fossil_energy / b100_lhv * 2  # 역외 사용 50% 반영을 고려한 2배
+    else:
+        theo_b100 = 0
 
-    cumulative_energy = total_energy
-    cumulative_emission = total_emission * 1_000_000
+    # 3) 실질값 계산을 위한 현재 total 값 복사
+    cumulative_energy = total_energy #벌금 기준 LCV 총합
+    cumulative_emission = total_emission * 1_000_000  # tCO₂eq → gCO₂eq
 
     added_energy = theo_b100 * b100_lhv * 0.5
     added_emission = added_energy * b100_gfi
@@ -577,6 +273,7 @@ def step1_b100_required(row1, std, total_energy, total_emission, penalty, fuel_d
     new_emission = cumulative_emission - fossil_emission + added_emission
     new_avg = new_emission / new_energy if new_energy > 0 else float('inf')
 
+    # 실질값 조건 만족 여부
     if new_avg < std and (inside + outside) > 0:
         numerator = std * cumulative_energy - cumulative_emission
         denominator = b100_lhv * (b100_gfi - 0.5 * gfi - std * 0.5)
@@ -584,34 +281,48 @@ def step1_b100_required(row1, std, total_energy, total_emission, penalty, fuel_d
     else:
         actual_b100 = 0
 
+    # 최종값 = 작은 값
     final_b100 = min(theo_b100, actual_b100)
-    return max(round(final_b100, 4), 0.0)
+    return max(round(final_b100, 4), 0.0) if final_b100 > 0 else 0.0
 
-# B100 역외 사용량 두번째 스텝
-def step2_b100_required(row2, std, total_energy, total_emission, penalty, final_b100_step1, row1, fuel_defaults_FEUM):
+#B100 역외 사용량 두번째 스텝
+def step2_b100_required(row2, std, total_energy, total_emission, penalty, final_b100_step1, row1, fuel_defaults):
+
+    # 두 번째 연료 (예: HSFO)
+    fuel2 = row2["연료종류"]
     lhv2 = row2["LHV"]
     gfi2 = row2["GFI"]
     inside2 = row2["역내"]
     outside2 = row2["역외"]
 
+    # 첫 번째 연료 (예: VLSFO)
     lhv1 = row1["LHV"]
     gfi1 = row1["GFI"]
 
-    b100_lhv = fuel_defaults_FEUM["Bio(Fame)"]["LHV"]
-    b100_gfi = fuel_defaults_FEUM["Bio(Fame)"]["WtW"]
+    # B100 정보
+    b100_lhv = fuel_defaults["B100"]["LHV"]
+    b100_gfi = fuel_defaults["B100"]["WtW"]
 
+    # 이론값 계산
     fossil_energy2 = inside2 * lhv2 + outside2 * lhv2 * 0.5
-    theo_b100_2 = fossil_energy2 / b100_lhv * 2 if penalty > 0 else 0
+    if penalty > 0:
+        theo_b100_2 = fossil_energy2 / b100_lhv * 2
+    else:
+        theo_b100_2 = 0
 
+    # 실질값 계산
+    # 기존 누적 에너지/배출량
     cumulative_energy = total_energy
     cumulative_emission = total_emission * 1_000_000 \
         + final_b100_step1 * b100_lhv * b100_gfi \
-        - final_b100_step1 * b100_lhv * 0.5 * gfi1
+    - final_b100_step1 * b100_lhv * 0.5 * gfi1
 
+    # Step1 반영값
     added_energy1 = final_b100_step1 * b100_lhv * 0.5
     added_emission1 = added_energy1 * b100_gfi
     offset_emission1 = final_b100_step1 * b100_lhv * 0.5 * gfi1
 
+    # Step2 이론값 반영값
     added_energy2 = theo_b100_2 * b100_lhv * 0.5
     added_emission2 = added_energy2 * b100_gfi
     offset_emission2 = fossil_energy2 * gfi2
@@ -623,31 +334,42 @@ def step2_b100_required(row2, std, total_energy, total_emission, penalty, final_
     if new_avg < std and (inside2 + outside2) > 0:
         numerator = std * (cumulative_energy + added_energy1) - (cumulative_emission + added_emission1 - offset_emission1)
         denominator = b100_lhv * (b100_gfi - 0.5 * gfi2 - std * 0.5)
-        actual_b100 = numerator / denominator
+        actual_b100 = numerator / denominator 
     else:
         actual_b100 = 0
 
+    # 최종값: 이론값 vs 실질값 중 작은 값
     final_b100_2 = min(theo_b100_2, actual_b100)
-    return max(round(final_b100_2, 4), 0.0)
+    return max(round(final_b100_2, 4), 0.0) if final_b100_2 > 0 else 0.0
 
-# B100 역외 사용량 세번째 스텝
-def step3_b100_required(row3, std, total_energy, total_emission, penalty, b100_result_step1, b100_result_step2, row1, row2, fuel_defaults_FEUM):
+#B100 역외 사용량 세번째 스텝
+def step3_b100_required(row3, std, total_energy, total_emission, penalty,
+                         b100_result_step1, b100_result_step2,
+                         row1, row2, fuel_defaults):
+    # LSMGO 연료 정보
     lhv3 = row3["LHV"]
     gfi3 = row3["GFI"]
     inside3 = row3["역내"]
     outside3 = row3["역외"]
 
+    # 이전 연료 정보
     lhv1, gfi1 = row1["LHV"], row1["GFI"]
     lhv2, gfi2 = row2["LHV"], row2["GFI"]
 
-    b100_lhv = fuel_defaults_FEUM["Bio(Fame)"]["LHV"]
-    b100_gfi = fuel_defaults_FEUM["Bio(Fame)"]["WtW"]
+    b100_lhv = fuel_defaults["B100"]["LHV"]
+    b100_gfi = fuel_defaults["B100"]["WtW"]
 
+    # LSMGO 벌금 기준 에너지 및 배출량
     fossil_energy3 = inside3 * lhv3 + outside3 * lhv3 * 0.5
     fossil_emission3 = fossil_energy3 * gfi3
 
-    theo_b100 = fossil_energy3 / b100_lhv * 2 if penalty > 0 else 0
+    # 이론값 계산
+    if penalty > 0:
+        theo_b100 = fossil_energy3 / b100_lhv * 2
+    else:
+        theo_b100 = 0
 
+    # 누적 에너지/배출량 계산 (이전 스텝 반영)
     cumulative_energy = total_energy \
         + 0.5 * b100_result_step1 * b100_lhv \
         + 0.5 * b100_result_step2 * b100_lhv
@@ -658,6 +380,7 @@ def step3_b100_required(row3, std, total_energy, total_emission, penalty, b100_r
         - b100_result_step1 * b100_lhv * 0.5 * gfi1 \
         - b100_result_step2 * b100_lhv * 0.5 * gfi2
 
+    # 이론 B100 투입 시 변경 예상
     added_energy = theo_b100 * b100_lhv * 0.5
     added_emission = added_energy * b100_gfi
     removed_emission = fossil_emission3
@@ -666,6 +389,7 @@ def step3_b100_required(row3, std, total_energy, total_emission, penalty, b100_r
     new_emission = cumulative_emission - removed_emission + added_emission
     new_avg = new_emission / new_energy if new_energy > 0 else float('inf')
 
+    # 실질값 계산
     if new_avg < std and (inside3 + outside3) > 0:
         numerator = std * cumulative_energy - cumulative_emission
         denominator = b100_lhv * (b100_gfi - 0.5 * gfi3 - std * 0.5)
@@ -673,11 +397,12 @@ def step3_b100_required(row3, std, total_energy, total_emission, penalty, b100_r
     else:
         actual_b100 = 0
 
+    # 최종값 선택
     final_b100 = min(theo_b100, actual_b100)
-    return max(round(final_b100, 4), 0.0)
+    return max(round(final_b100, 4), 0.0) if final_b100 > 0 else 0.0
 
 # B100 역외 총량 계산
-def calculate_b100_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM):
+def calculate_b100_total_required_stepwise(sorted_fuels, result, fuel_defaults):
     std = result["standard_now"]
     total_energy = result["total_energy"]
     total_emission = result["total_emission"]
@@ -688,41 +413,44 @@ def calculate_b100_total_required_stepwise(sorted_fuels, result, fuel_defaults_F
 
     if len(sorted_fuels) >= 1:
         row1 = sorted_fuels[0]
-        step1 = step1_b100_required(row1, std, total_energy, total_emission, penalty, fuel_defaults_FEUM)
+        step1 = step1_b100_required(row1, std, total_energy, total_emission, penalty, fuel_defaults)
         b100_total += step1
 
     if len(sorted_fuels) >= 2:
         row2 = sorted_fuels[1]
-        step2 = step2_b100_required(row2, std, total_energy, total_emission, penalty, step1, sorted_fuels[0], fuel_defaults_FEUM)
+        step2 = step2_b100_required(row2, std, total_energy, total_emission, penalty,
+                                    step1, sorted_fuels[0], fuel_defaults)
         b100_total += step2
 
     if len(sorted_fuels) >= 3:
         row3 = sorted_fuels[2]
-        step3 = step3_b100_required(row3, std, total_energy, total_emission, penalty, step1, step2, sorted_fuels[0], sorted_fuels[1], fuel_defaults_FEUM)
+        step3 = step3_b100_required(row3, std, total_energy, total_emission, penalty,
+                                    step1, step2, sorted_fuels[0], sorted_fuels[1], fuel_defaults)
         b100_total += step3
 
     return round(b100_total, 3)
 
-# LNG & LPG 역외 사용량 첫번째 스텝
-def step1_green_required(row1, std, total_energy, total_emission, penalty, fuel_defaults_FEUM, fuel_type):
-    fossil_lhv = row1["LHV"]
-    fossil_gfi = row1["GFI"]
+#LNG 역외 사용량 첫번째 스텝
+def step1_lng_required(row1, std, total_energy, total_emission, penalty, fuel_defaults):
+    fuel = row1["연료종류"]
+    lhv = row1["LHV"]
+    gfi = row1["GFI"]
     inside = row1["역내"]
     outside = row1["역외"]
 
-    green_lhv = fuel_defaults_FEUM[fuel_type]["LHV"]
-    green_gfi = fuel_defaults_FEUM[fuel_type]["WtW"]
+    lng_lhv = fuel_defaults["LNG"]["LHV"]
+    lng_gfi = fuel_defaults["LNG"]["WtW"]
 
-    fossil_energy = inside * fossil_lhv + outside * fossil_lhv * 0.5
-    fossil_emission = fossil_energy * fossil_gfi
+    fossil_energy = inside * lhv + outside * lhv * 0.5
+    fossil_emission = fossil_energy * gfi
 
-    theo_green = fossil_energy / green_lhv * 2 if penalty > 0 else 0
+    theo_lng = fossil_energy / lng_lhv * 2 if penalty > 0 else 0
 
     cumulative_energy = total_energy
     cumulative_emission = total_emission * 1_000_000
 
-    added_energy = theo_green * green_lhv * 0.5
-    added_emission = added_energy * green_gfi
+    added_energy = theo_lng * lng_lhv * 0.5
+    added_emission = added_energy * lng_gfi
 
     new_energy = cumulative_energy - fossil_energy + added_energy
     new_emission = cumulative_emission - fossil_emission + added_emission
@@ -730,15 +458,17 @@ def step1_green_required(row1, std, total_energy, total_emission, penalty, fuel_
 
     if new_avg < std and (inside + outside) > 0:
         numerator = std * cumulative_energy - cumulative_emission
-        denominator = green_lhv * (green_gfi - 0.5 * fossil_gfi - std * 0.5)
-        actual_green = numerator / denominator
+        denominator = lng_lhv * (lng_gfi - 0.5 * gfi - std * 0.5)
+        actual_lng = numerator / denominator
     else:
-        actual_green = 0
+        actual_lng = 0
 
-    return max(round(min(theo_green, actual_green), 4), 0.0)
+    final_lng = min(theo_lng, actual_lng)
+    return max(round(final_lng, 4), 0.0) if final_lng > 0 else 0.0
 
-# LNG & LPG 역외 사용량 두번째 스텝
-def step2_green_required(row2, std, total_energy, total_emission, penalty, final_lng_step1, row1, fuel_defaults_FEUM, fuel_type):
+#LNG 역외 사용량 두번째 스텝
+def step2_lng_required(row2, std, total_energy, total_emission, penalty, final_lng_step1, row1, fuel_defaults):
+    fuel2 = row2["연료종류"]
     lhv2 = row2["LHV"]
     gfi2 = row2["GFI"]
     inside2 = row2["역내"]
@@ -747,16 +477,14 @@ def step2_green_required(row2, std, total_energy, total_emission, penalty, final
     lhv1 = row1["LHV"]
     gfi1 = row1["GFI"]
 
-    lng_lhv = fuel_defaults_FEUM[fuel_type]["LHV"]
-    lng_gfi = fuel_defaults_FEUM[fuel_type]["WtW"]
+    lng_lhv = fuel_defaults["LNG"]["LHV"]
+    lng_gfi = fuel_defaults["LNG"]["WtW"]
 
     fossil_energy2 = inside2 * lhv2 + outside2 * lhv2 * 0.5
     theo_lng_2 = fossil_energy2 / lng_lhv * 2 if penalty > 0 else 0
 
     cumulative_energy = total_energy
-    cumulative_emission = total_emission * 1_000_000 \
-        + final_lng_step1 * lng_lhv * lng_gfi \
-        - final_lng_step1 * lng_lhv * 0.5 * gfi1
+    cumulative_emission = total_emission * 1_000_000 + final_lng_step1 * lng_lhv * lng_gfi - final_lng_step1 * lng_lhv * 0.5 * gfi1
 
     added_energy1 = final_lng_step1 * lng_lhv * 0.5
     added_emission1 = added_energy1 * lng_gfi
@@ -778,12 +506,12 @@ def step2_green_required(row2, std, total_energy, total_emission, penalty, final
         actual_lng = 0
 
     final_lng_2 = min(theo_lng_2, actual_lng)
-    return max(round(final_lng_2, 4), 0.0)
+    return max(round(final_lng_2, 3), 0.0) if final_lng_2 > 0 else 0.0
 
-# LNG & LPG 역외 사용량 세번째 스텝
-def step3_green_required(row3, std, total_energy, total_emission, penalty,
+#LNG 역외 사용량 세번째 스텝
+def step3_lng_required(row3, std, total_energy, total_emission, penalty,
                        lng_result_step1, lng_result_step2,
-                       row1, row2, fuel_defaults_FEUM, fuel_type):
+                       row1, row2, fuel_defaults):
     lhv3 = row3["LHV"]
     gfi3 = row3["GFI"]
     inside3 = row3["역내"]
@@ -792,18 +520,15 @@ def step3_green_required(row3, std, total_energy, total_emission, penalty,
     lhv1, gfi1 = row1["LHV"], row1["GFI"]
     lhv2, gfi2 = row2["LHV"], row2["GFI"]
 
-    lng_lhv = fuel_defaults_FEUM[fuel_type]["LHV"]
-    lng_gfi = fuel_defaults_FEUM[fuel_type]["WtW"]
+    lng_lhv = fuel_defaults["LNG"]["LHV"]
+    lng_gfi = fuel_defaults["LNG"]["WtW"]
 
     fossil_energy3 = inside3 * lhv3 + outside3 * lhv3 * 0.5
     fossil_emission3 = fossil_energy3 * gfi3
 
     theo_lng = fossil_energy3 / lng_lhv * 2 if penalty > 0 else 0
 
-    cumulative_energy = total_energy \
-        + 0.5 * lng_result_step1 * lng_lhv \
-        + 0.5 * lng_result_step2 * lng_lhv
-
+    cumulative_energy = total_energy + 0.5 * lng_result_step1 * lng_lhv + 0.5 * lng_result_step2 * lng_lhv
     cumulative_emission = total_emission * 1_000_000 \
         + lng_result_step1 * lng_lhv * lng_gfi \
         + lng_result_step2 * lng_lhv * lng_gfi \
@@ -826,10 +551,10 @@ def step3_green_required(row3, std, total_energy, total_emission, penalty,
         actual_lng = 0
 
     final_lng = min(theo_lng, actual_lng)
-    return max(round(final_lng, 4), 0.0)
+    return max(round(final_lng, 4), 0.0) if final_lng > 0 else 0.0
 
-# LNG & LPG 역외 총량 계산
-def calculate_lng_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM, fuel_type):
+# LNG 역외 총량 계산
+def calculate_lng_total_required_stepwise(sorted_fuels, result, fuel_defaults):
     std = result["standard_now"]
     total_energy = result["total_energy"]
     total_emission = result["total_emission"]
@@ -840,19 +565,19 @@ def calculate_lng_total_required_stepwise(sorted_fuels, result, fuel_defaults_FE
 
     if len(sorted_fuels) >= 1:
         row1 = sorted_fuels[0]
-        step1 = step1_green_required(row1, std, total_energy, total_emission, penalty, fuel_defaults_FEUM, fuel_type)
+        step1 = step1_lng_required(row1, std, total_energy, total_emission, penalty, fuel_defaults)
         lng_total += step1
 
     if len(sorted_fuels) >= 2:
         row2 = sorted_fuels[1]
-        step2 = step2_green_required(row2, std, total_energy, total_emission, penalty,
-                                   step1, sorted_fuels[0], fuel_defaults_FEUM, fuel_type)
+        step2 = step2_lng_required(row2, std, total_energy, total_emission, penalty,
+                                   step1, sorted_fuels[0], fuel_defaults)  # ✅ 전달
         lng_total += step2
 
     if len(sorted_fuels) >= 3:
         row3 = sorted_fuels[2]
-        step3 = step3_green_required(row3, std, total_energy, total_emission, penalty,
-                                   step1, step2, sorted_fuels[0], sorted_fuels[1], fuel_defaults_FEUM, fuel_type)
+        step3 = step3_lng_required(row3, std, total_energy, total_emission, penalty,
+                                   step1, step2, sorted_fuels[0], sorted_fuels[1], fuel_defaults)  # ✅ 추가!
         lng_total += step3
 
     return round(lng_total, 4)
@@ -875,16 +600,12 @@ if menu == "GFI 계산기(IMO 중기조치)":
         st.subheader("✏️ 연료 수정")
         edit_row = st.session_state.fuel_data[st.session_state["edit_index"]]
         with st.form("edit_form"):
-            fuel_type = st.selectbox(
-                "연료 종류",
-                list(fuel_defaults_GFI.keys()),
-                index=list(fuel_defaults_GFI.keys()).index(edit_row["연료종류"])
-            )
-            lhv = st.number_input("저위발열량 (MJ/Ton)", value=float(edit_row["LHV"]), min_value=0.0, key="edit_lhv")
-            wtw = st.number_input("Well-to-Wake 계수 (gCO₂eq/MJ)", value=float(edit_row["WtW"]), min_value=0.0, key="edit_wtw")
-            amount = st.number_input("사용량 (톤)", value=float(edit_row["사용량"]), min_value=0.0, key="edit_amount")
+            fuel_type = st.selectbox("연료 종류", list(fuel_defaults.keys()),
+                                     index=list(fuel_defaults.keys()).index(edit_row["연료종류"]))
+            lhv = st.number_input("저위발열량 (MJ/Ton)", value=float(edit_row["LHV"]), min_value=0.0)
+            wtw = st.number_input("Well-to-Wake 계수 (gCO₂eq/MJ)", value=float(edit_row["WtW"]), min_value=0.0)
+            amount = st.number_input("사용량 (톤)", value=float(edit_row["사용량"]), min_value=0.0)
             submitted = st.form_submit_button("수정 완료")
-
             if submitted:
                 st.session_state.fuel_data[st.session_state["edit_index"]] = {
                     "연료종류": fuel_type,
@@ -895,7 +616,6 @@ if menu == "GFI 계산기(IMO 중기조치)":
                 st.session_state["gfi_calculated"] = True
                 st.session_state["edit_index"] = None
                 st.rerun()
-
 
     # 연료 추가
     else:
@@ -908,13 +628,13 @@ if menu == "GFI 계산기(IMO 중기조치)":
                 st.session_state["manual_mode"] = not st.session_state["manual_mode"]
                 st.rerun()
         with st.form("fuel_form"):
-            fuel_type = st.selectbox("연료 종류", list(fuel_defaults_GFI.keys()))
+            fuel_type = st.selectbox("연료 종류", list(fuel_defaults.keys()))
             if st.session_state["manual_mode"]:
                 lhv = st.number_input("저위발열량 (MJ/Ton)", min_value=0.0)
                 wtw = st.number_input("Well-to-Wake 계수 (gCO₂eq/MJ)", min_value=0.0)
             else:
-                lhv = fuel_defaults_GFI[fuel_type]["LHV"]
-                wtw = fuel_defaults_GFI[fuel_type]["WtW"]
+                lhv = fuel_defaults[fuel_type]["LHV"]
+                wtw = fuel_defaults[fuel_type]["WtW"]
             amount = st.number_input("사용량 (톤)", min_value=0.0)
             submitted = st.form_submit_button("연료 추가")
             if submitted:
@@ -982,10 +702,6 @@ if menu == "GFI 계산기(IMO 중기조치)":
     with col2:  
         if st.button("GFI 계산하기"):
             if st.session_state.fuel_data:
-                # 분해된 연료 데이터 생성
-                expanded_fuel_data = expand_mixed_fuel_GFI(st.session_state["fuel_data"])
-                # 분해된 연료 데이터를 세션 상태에 저장 (필요시)
-                st.session_state["expanded_fuel_data"] = expanded_fuel_data
                 st.session_state["gfi_calculated"] = True
             else:
                 st.warning("연료를 먼저 입력해주세요.")
@@ -999,13 +715,8 @@ if menu == "GFI 계산기(IMO 중기조치)":
             
     # 계산 결과 표시
     if st.session_state["gfi_calculated"] and st.session_state.fuel_data:
-        # 분해된 연료 데이터 불러오기
-        expanded_fuel_data = st.session_state.get("expanded_fuel_data", [])
         # ✨ 여기에 기존 GFI 계산기 로직 (그래프, 표 등) 붙이면 됨
-        #merged_gfi_data = get_merged_gfi_data(st.session_state["fuel_data"])
-        # expanded_fuel_data를 사용해 계산 및 표 생성
-        merged_gfi_data = get_merged_gfi_data(expanded_fuel_data)  # 이 함수에 맞게 수정 필요
-        df = pd.DataFrame(merged_gfi_data)
+        df = pd.DataFrame(st.session_state.fuel_data)
         if not df.empty:
             df["총배출량(tCO2eq)"] = df["LHV"] * df["WtW"] * df["사용량"] * 1e-6
             df["총에너지(MJ)"] = df["LHV"] * df["사용량"]
@@ -1191,76 +902,68 @@ if menu == "GFI 계산기(IMO 중기조치)":
             plt.grid(True, linestyle="--", alpha=0.3)
 
             st.pyplot(plt)
-            
-            index_2028 = years.index(2028)
-            dg_2028 = direct_gfi[index_2028]
 
             if surplus_data:
+                #st.subheader("🟢 Surplus 발생 연도")
+                #st.dataframe(pd.DataFrame(surplus_data), use_container_width=True, hide_index=True)
+
                 st.subheader("🔄 Surplus로 Tier2 탄소세 상쇄 가능한 각 유종별 연료량 (톤)")
 
-                base_gfi_dict = dict(zip(years, base_gfi))
-                direct_gfi_dict = dict(zip(years, direct_gfi))
-                
-                # 마지막 서플러스 연도 자동 추출 (years 내에 있는 값만)
-                last_surplus_year = max(year for year in [entry["연도"] for entry in surplus_data] if year in years)
-                base_last = base_gfi_dict[last_surplus_year]
-                direct_last = direct_gfi_dict[last_surplus_year]
+                fuel_gfi_lhv = {
+        "VLSFO": {"GFI": 91.60123, "LHV": 40500},
+        "HSFO":  {"GFI": 91.60123, "LHV": 40500},
+        "LSMGO": {"GFI": 90.63185, "LHV": 42700},
+        "LNG":   {"GFI": 76.12916, "LHV": 49100},
+        "B24":   {"GFI": 74.28817013, "LHV": 39708},
+        "B30":   {"GFI": 69.85145205, "LHV": 39510},
+        "B100":  {"GFI": 14.6, "LHV": 37200},
+    }
 
-                # 마지막 서플러스 연도 direct GFI 기준으로 valid_fuels 필터링
-                valid_fuels = {
-                    fuel: info
-                    for fuel, info in fuel_defaults_GFI.items()
-                    if info["WtW"] > base_last  # base GFI 기준으로 Tier2 상쇄 가능 연료 필터링
-                    }
+                base_gfi_dict = dict(zip(years, base_gfi))
 
                 offset_table = {"연도": []}
-                # 모든 연료에 대해 리스트 초기화 (안정성 위해)
-                for fuel in valid_fuels.keys():
+                for fuel in fuel_gfi_lhv.keys():
                     offset_table[fuel] = []
 
                 for entry in surplus_data:
                     year = entry["연도"]
-                    if year not in base_gfi_dict:
-                        continue  # year가 리스트에 없으면 건너뜀
-                    surplus = float(entry["Surplus (tCO₂eq)"].replace(",", "").split()[0])
+                    surplus_str = entry["Surplus (tCO₂eq)"]
+                    surplus = float(surplus_str.replace(",", "").split()[0])
                     base = base_gfi_dict[year]
-                    direct = direct_gfi_dict[year]
+
                     offset_table["연도"].append(year)
 
-                    for fuel in valid_fuels.keys():
-                        if fuel in valid_fuels:
-                            wt_w = valid_fuels[fuel]["WtW"]
-                            delta = wt_w - base
-                            if delta > 0:
-                                mj = surplus * 1_000_000 / delta
-                                ton = mj / valid_fuels[fuel]["LHV"]
-                                offset_table[fuel].append(round(ton, 2))
-                            else:
-                                offset_table[fuel].append(0.0)
+                    for fuel, info in fuel_gfi_lhv.items():
+                        delta_gfi = info["GFI"] - base
+                        if delta_gfi > 0:
+                            energy_mj = surplus * 1_000_000 / delta_gfi
+                            tonnage = energy_mj / info["LHV"]
+                            offset_table[fuel].append(round(tonnage, 2))
                         else:
                             offset_table[fuel].append(0.0)
-
+                            
                 df_offset_wide = pd.DataFrame(offset_table)
                 df_offset_formatted = df_offset_wide.copy()
                 for col in df_offset_formatted.columns:
                     if col != "연도":
-                        df_offset_formatted[col] = df_offset_formatted[col].apply(lambda x: f"{x:,.2f}")
+                        df_offset_formatted[col] = df_offset_formatted[col].apply(lambda x: f"{float(x):,.2f}")
                 st.dataframe(df_offset_formatted, use_container_width=True, hide_index=True)
+            
+            # ✅ Tier 2 상쇄용 친환경 연료 사용량 계산 (연도별)
+            if gfi > min(direct_gfi):  # GFI가 최소 Direct GFI보다 클 때만 계산
 
-            if gfi > dg_2028:
                 st.subheader("🌿 탄소세 상쇄를 위한 각 유종별 연료량 (톤)")
-                data_tier2 = {"연도": []}
-                data_tier1 = {"연도": []}
 
-                # 2028년 direct GFI 기준으로 valid_fuels 필터링
-                valid_fuels = {
-                    fuel: info
-                    for fuel, info in fuel_defaults_GFI.items()
-                    if info["WtW"] < dg_2028
+                green_fuels = {
+                    "LNG":  {"GFI": 76.12916, "LHV": 49100},
+                    "B24":  {"GFI": 74.28817013, "LHV": 39708},
+                    "B30":  {"GFI": 69.85145205, "LHV": 39510},
+                    "B100": {"GFI": 14.60, "LHV": 37200},
                 }
 
-                # 모든 연료에 대해 리스트 초기화
-                for fuel in valid_fuels.keys():
+                data_tier2 = {"연도": []}
+                data_tier1 = {"연도": []}
+                for fuel in green_fuels:
                     data_tier2[fuel] = []
                     data_tier1[fuel] = []
 
@@ -1268,45 +971,39 @@ if menu == "GFI 계산기(IMO 중기조치)":
                     bg = base_gfi[i]
                     dg = direct_gfi[i]
 
-                    data_tier2["연도"].append(year)
-                    data_tier1["연도"].append(year)
+                    # Tier 2 계산
+                    if gfi > bg:
+                        cb2 = (gfi - bg) * total_energy / 1e6  # Tier2 CB (tCO₂eq)
+                        cb1 = (gfi - dg) * total_energy / 1e6   # Tier1 CB (tCO₂eq)
 
-                    # 유효 연료만 반복
-                    for fuel in valid_fuels.keys():
-                        if fuel in valid_fuels:
-                            info = valid_fuels[fuel]
-                            fuel_gfi = info["WtW"]
-                            lhv = info["LHV"]
+                        data_tier2["연도"].append(year)
+                        data_tier1["연도"].append(year)
 
-                            if gfi > bg:
-                                cb2 = (gfi - bg) * total_energy / 1e6
-                                cb1 = (gfi - dg) * total_energy / 1e6
+                        for fuel, info in green_fuels.items():
+                            delta_gfi_t2 = bg - info["GFI"]
+                            delta_gfi_t1 = dg - info["GFI"]
 
-                                delta_t2 = bg - fuel_gfi
-                                delta_t1 = dg - fuel_gfi
-
-                                t2 = cb2 * 1_000_000 / delta_t2 / lhv if delta_t2 > 0 else 0
-                                t1 = cb1 * 1_000_000 / delta_t1 / lhv if delta_t1 > 0 else 0
-
-                            elif gfi > dg:
-                                cb1 = (gfi - dg) * total_energy / 1e6
-
-                                delta_t1 = dg - fuel_gfi
-                                t2 = 0
-                                t1 = cb1 * 1_000_000 / delta_t1 / lhv if delta_t1 > 0 else 0
-                            else:
-                                t1 = 0
-                                t2 = 0
+                            t2 = cb2 * 1_000_000 / delta_gfi_t2 / info["LHV"] if delta_gfi_t2 > 0 else 0
+                            t1 = cb1 * 1_000_000 / delta_gfi_t1 / info["LHV"] if delta_gfi_t1 > 0 else 0
 
                             data_tier2[fuel].append(round(t2, 2))
                             data_tier1[fuel].append(round(t1, 2))
-                        else:
-                            data_tier2[fuel].append(0.0)
-                            data_tier1[fuel].append(0.0)
+
+                    # Tier 1 계산만 발생한 경우도 포함
+                    elif gfi > dg:
+                        cb1 = (gfi - dg) * total_energy / 1e6   # Tier1 CB (tCO₂eq)
+                        data_tier1["연도"].append(year)
+
+                        for fuel, info in green_fuels.items():
+                            delta_gfi_t1 = dg - info["GFI"]
+                            t1 = cb1 * 1_000_000 / delta_gfi_t1 / info["LHV"] if delta_gfi_t1 > 0 else 0
+                            data_tier1[fuel].append(round(t1, 2))
+
 
                 df_t2 = pd.DataFrame(data_tier2)
                 df_t1 = pd.DataFrame(data_tier1)
-
+                
+                # 👉 쉼표 포함 포맷팅
                 df_t2_formatted = df_t2.copy()
                 df_t1_formatted = df_t1.copy()
                 for df in [df_t2_formatted, df_t1_formatted]:
@@ -1319,6 +1016,7 @@ if menu == "GFI 계산기(IMO 중기조치)":
 
                 st.write("✅ Tier 1 탄소세 상쇄에 필요한 각 유종별 연료량 (톤)")
                 st.dataframe(df_t1_formatted, use_container_width=True, hide_index=True)
+
 
         else:
             st.warning("먼저 연료를 입력해주세요.")
@@ -1351,7 +1049,7 @@ elif menu == "FuelEU Maritime":
         st.subheader("✏️ 연료 수정")
         row = st.session_state["fueleu_data"][st.session_state["fueleu_edit_index"]]
         with st.form("fueleu_edit_form"):
-            fuel_type = st.selectbox("연료 종류", list(fuel_defaults_FEUM.keys()), index=list(fuel_defaults_FEUM.keys()).index(row["연료종류"]))
+            fuel_type = st.selectbox("연료 종류", list(fuel_defaults.keys()), index=list(fuel_defaults.keys()).index(row["연료종류"]))
             lhv = st.number_input("저위발열량 (MJ/Ton)", value=float(row["LHV"]), min_value=0.0)
             gfi = st.number_input("GFI (gCO₂eq/MJ)", value=float(row["GFI"]), min_value=0.0)
             inside = st.number_input("역내 사용량 (톤)", value=float(row["역내"]), min_value=0.0)
@@ -1370,13 +1068,13 @@ elif menu == "FuelEU Maritime":
                 st.rerun()
     else:
         with st.form("fueleu_add_form"):
-            fuel_type = st.selectbox("연료 종류", list(fuel_defaults_FEUM.keys()))
+            fuel_type = st.selectbox("연료 종류", list(fuel_defaults.keys()))
             if st.session_state["fueleu_manual_mode"]:
                 lhv = st.number_input("저위발열량 (MJ/Ton)", min_value=0.0)
                 gfi = st.number_input("GFI (gCO₂eq/MJ)", min_value=0.0)
             else:
-                lhv = fuel_defaults_FEUM[fuel_type]["LHV"]
-                gfi = fuel_defaults_FEUM[fuel_type]["WtW"]
+                lhv = fuel_defaults[fuel_type]["LHV"]
+                gfi = fuel_defaults[fuel_type]["WtW"]
             inside = st.number_input("역내 사용량 (톤)", min_value=0.0)
             outside = st.number_input("역외 사용량 (톤)", min_value=0.0)
             submitted = st.form_submit_button("연료 추가")
@@ -1466,17 +1164,16 @@ elif menu == "FuelEU Maritime":
         st.success("FuelEU 계산 완료")
 
         merged_fuel_data = get_merged_fueleu_data(st.session_state["fueleu_data"])
-        result = calculate_fueleu_result(merged_fuel_data)
+        result = calculate_fueleu_result(merged_fuel_data, fuel_defaults)
     
     # ✅ VLSFO 풀링 가능량 미리 계산 (Δ1 + Δ2)
-        vlsfo_info = fuel_defaults_FEUM["VLSFO"]
-        vlsfo_props = {"LHV": vlsfo_info["LHV"], "GFI": vlsfo_info["WtW"]}
+        vlsfo_props = {"LHV": 40500, "GFI": 91.60123}
         delta1_in = calculate_pooling_ton_by_fuel(result, "VLSFO", props=vlsfo_props)
         temp_data = st.session_state["fueleu_data"] + [{
     "연료종류": "VLSFO", "LHV": vlsfo_props["LHV"], "GFI": vlsfo_props["GFI"],
     "역내": delta1_in, "역외": 0.0
 }]
-        result2 = calculate_fueleu_result(temp_data)
+        result2 = calculate_fueleu_result(temp_data, fuel_defaults)
         delta2_in = calculate_pooling_ton_by_fuel(result2, "VLSFO", props=vlsfo_props)
         vlsfo_total_in = round(delta1_in + delta2_in, 4)
 
@@ -1501,8 +1198,7 @@ elif menu == "FuelEU Maritime":
             st.write("**예상 탄소세:** 없음 (Surplus 상태)")
 
             if vlsfo_total_in is not None:
-                unit_price = get_vlsfo_penalty_per_ton(2025)
-                pooling_revenue = round(unit_price * vlsfo_total_in, 0)
+                pooling_revenue = round(58.605719596 * vlsfo_total_in, 0)
                 st.write(f"**VLSFO 풀링 가능량 (역내 기준):** {vlsfo_total_in:,.2f} 톤")
                 st.write(f"**발생 Surplus 가치:** € {pooling_revenue:,.0f}")
 
@@ -1510,25 +1206,21 @@ elif menu == "FuelEU Maritime":
         if result["avg_ghg_intensity"] < result["standard_now"]:
             st.info("📊 Surplus 상태입니다. Pooling 가능한 각 유종별 연료량을 계산합니다.")
 
-            valid_fuels = {}
-            for fuel, info in fuel_defaults_FEUM.items():
-                if info["WtW"] > 91.16 * 0.98:
-                    valid_fuels[fuel] = {
-                        "LHV": info["LHV"],
-                        "GFI": info["WtW"]
-                    }
+            pooling_candidates = {
+            "VLSFO": {"LHV": 40500, "GFI": 91.60123},
+            "HSFO":  {"LHV": 40500, "GFI": 91.60123},
+            "LSMGO": {"LHV": 42700, "GFI": 90.63185}
+        }
 
             pooling_table = {"연료": [], "역내 톤수": [], "역외 톤수": []}
 
-            for fuel, props in valid_fuels.items():
-                # Δ1 계산
+            for fuel, props in pooling_candidates.items():
                 delta1_in = calculate_pooling_ton_by_fuel(result, fuel_type=fuel, props=props)
-                # Δ2 계산
                 temp_data = st.session_state["fueleu_data"] + [{
                 "연료종류": fuel, "LHV": props["LHV"], "GFI": props["GFI"],
                 "역내": delta1_in, "역외": 0.0
             }]
-                result2 = calculate_fueleu_result(temp_data)
+                result2 = calculate_fueleu_result(temp_data, fuel_defaults)
                 delta2_in = calculate_pooling_ton_by_fuel(result2, fuel_type=fuel, props=props)
 
                 total_in = round(delta1_in + delta2_in, 4)
@@ -1547,80 +1239,44 @@ elif menu == "FuelEU Maritime":
             st.dataframe(df_pooling, use_container_width=True, hide_index=True)
             
             # 🔺 Deficit 상태 - 친환경 연료 필요량 
-                # 🔺 Deficit 상태 - 친환경 연료 필요량 
         elif result["avg_ghg_intensity"] > result["standard_now"]:
-            st.info("📊 Deficit 상태입니다. 탄소세를 '0'로 만들기 위한 친환경 연료량을 계산합니다.")
-            st.subheader("🌱 탄소세 상쇄를 위해 필요한 각 유종별 연료량")
+                st.info("📊 Deficit 상태입니다. 탄소세를 '0'로 만들기 위한 친환경 연료량을 계산합니다.")
+                st.subheader("🌱 탄소세 상쇄를 위해 필요한 각 유종별 연료량")
 
-            green_table = {
-                "연료": [],
-                "역내 톤수": [],
-                "역외 톤수": []
-            }
+                green_table = {
+                    "연료": [],
+                    "역내 톤수": [],
+                    "역외 톤수": []
+                }
 
-            # ✅ GHG Intensity 기준값보다 낮은 연료만 선별
-            valid_fuels = {
-                fuel: info for fuel, info in fuel_defaults_FEUM.items()
-                if info["WtW"] < 91.16 * 0.98
-            }
+                # ✅ 연료 통합 및 정렬
+                merged_fuel_data = get_merged_fueleu_data(st.session_state["fueleu_data"])
+                sorted_fuels = sorted(merged_fuel_data, key=lambda x: -x["GFI"])
 
-            # ✅ 연료 통합 후, 유효 연료만 필터링
-            #merged_fuel_data = get_merged_fueleu_data(st.session_state["fueleu_data"])
-            #filtered_fuel_data = [f for f in merged_fuel_data if f["연료종류"] in valid_fuels]
-            
-            # ✅ GFI 높은 순 정렬
-            #sorted_fuels = sorted(filtered_fuel_data, key=lambda x: -x["GFI"])
-            merged_fuel_data = get_merged_fueleu_data(st.session_state["fueleu_data"])
-            sorted_fuels = sorted(merged_fuel_data, key=lambda x: -x["GFI"])
+                # ✅ B100, LNG 역외 사용량 계산
+                b100_out = calculate_b100_total_required_stepwise(sorted_fuels, result, fuel_defaults)
+                lng_out = calculate_lng_total_required_stepwise(sorted_fuels, result, fuel_defaults)
 
-            # ✅ B100
-            if "Bio(Fame)" in valid_fuels:
-                in_b100 = calculate_required_green_fuel_inside(result, "Bio(Fame)", fuel_defaults_FEUM)
-                out_b100 = calculate_b100_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM)
-                green_table["연료"].append("B100")
-                green_table["역내 톤수"].append(in_b100)
-                green_table["역외 톤수"].append(out_b100)
 
-            # ✅ LNG
-            if "LNG" in valid_fuels:
-                in_lng = calculate_required_green_fuel_inside(result, "LNG", fuel_defaults_FEUM)
-                out_lng = calculate_lng_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM,"LNG")
-                green_table["연료"].append("LNG")
-                green_table["역내 톤수"].append(in_lng)
-                green_table["역외 톤수"].append(out_lng)
+                for fuel in ["B100", "LNG", "B24", "B30"]:
+                    in_ton = calculate_required_green_fuel_inside(result, fuel, fuel_defaults)
 
-            # ✅ LPG(Propane)
-            if "LPG(Propane)" in valid_fuels:
-                in_lpg_propane = calculate_required_green_fuel_inside(result, "LPG(Propane)", fuel_defaults_FEUM)
-                out_lpg_propane = calculate_lng_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM,"LPG(Propane)")
-                green_table["연료"].append("LPG(Propane)")
-                green_table["역내 톤수"].append(in_lpg_propane)
-                green_table["역외 톤수"].append(out_lpg_propane)
+                    if fuel == "B24" or fuel == "B30":
+                        out_ton = calculate_b24_b30_outside_ton(result, fuel)
+                    elif fuel == "B100":
+                        out_ton = b100_out
+                    elif fuel == "LNG":
+                        out_ton = lng_out
 
-            # ✅ LPG(Butane)
-            if "LPG(Butane)" in valid_fuels:
-                in_lpg_butane = calculate_required_green_fuel_inside(result, "LPG(Butane)", fuel_defaults_FEUM)
-                out_lpg_butane = calculate_lng_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM,"LPG(Butane)")
-                green_table["연료"].append("LPG(Butane)")
-                green_table["역내 톤수"].append(in_lpg_butane)
-                green_table["역외 톤수"].append(out_lpg_butane)
-
-            # ✅ 혼합연료 B24, B30
-            for mix_fuel in valid_fuels:
-                if mix_fuel.startswith("B24(") or mix_fuel.startswith("B30("):
-                    in_mix = calculate_required_green_fuel_inside(result, mix_fuel, fuel_defaults_FEUM)
-                    out_mix = calculate_b24_b30_outside_ton(result, mix_fuel)
-
-                    green_table["연료"].append(mix_fuel)  # "B24(HSFO)" 등 정확한 명칭
-                    green_table["역내 톤수"].append(in_mix)
-                    green_table["역외 톤수"].append(out_mix)
+                    green_table["연료"].append(fuel)
+                    green_table["역내 톤수"].append(in_ton)
+                    green_table["역외 톤수"].append(out_ton)
                 
-            # ✅ 쉼표 포맷 처리
-            df_green = pd.DataFrame(green_table)
-            for col in ["역내 톤수", "역외 톤수"]:
-                df_green[col] = df_green[col].apply(lambda x: f"{x:,.2f}")
-            # ✅ 인덱스 숨기기
-            st.dataframe(df_green, use_container_width=True, hide_index=True)
+                # ✅ 쉼표 포맷 처리
+                df_green = pd.DataFrame(green_table)
+                for col in ["역내 톤수", "역외 톤수"]:
+                    df_green[col] = df_green[col].apply(lambda x: f"{x:,.2f}")
+                st.dataframe(pd.DataFrame(df_green))
                 
                 # 📈 GHG Intensity 기준선 vs 평균 GHG Intensity 그래프 및 연도별 CB/벌금 테이블
         if "avg_ghg_intensity" in result and "total_energy" in result:
