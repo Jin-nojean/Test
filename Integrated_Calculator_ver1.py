@@ -1539,8 +1539,8 @@ elif menu == "FuelEU Maritime":
     
     # ✅ HFO 풀링 가능량 미리 계산 (Δ1 + Δ2)
         vlsfo_props = {
-                "LHV": fuel_defaults_FEUM["HFO"]["LHV"],
-                "WtW": fuel_defaults_FEUM["HFO"]["WtW"]
+                "LHV": fuel_defaults_FEUM["HFO (Grades RME to RMK)"]["LHV"],
+                "WtW": fuel_defaults_FEUM["HFO (Grades RME to RMK)"]["WtW"]
                 }       
         delta1_in = calculate_pooling_ton_by_fuel(result, "HFO", props=vlsfo_props)
         temp_data = st.session_state["fueleu_data"] + [{
