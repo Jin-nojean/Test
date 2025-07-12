@@ -1537,14 +1537,14 @@ elif menu == "FuelEU Maritime":
         merged_fuel_data = get_merged_fueleu_data(st.session_state["fueleu_data"])
         result = calculate_fueleu_result(merged_fuel_data, fuel_defaults_FEUM)
     
-    # ✅ VLSFO 풀링 가능량 미리 계산 (Δ1 + Δ2)
+    # ✅ HFO 풀링 가능량 미리 계산 (Δ1 + Δ2)
         vlsfo_props = {
-                "LHV": fuel_defaults_FEUM["VLSFO"]["LHV"],
-                "WtW": fuel_defaults_FEUM["VLSFO"]["WtW"]
+                "LHV": fuel_defaults_FEUM["HFO"]["LHV"],
+                "WtW": fuel_defaults_FEUM["HFO"]["WtW"]
                 }       
-        delta1_in = calculate_pooling_ton_by_fuel(result, "VLSFO", props=vlsfo_props)
+        delta1_in = calculate_pooling_ton_by_fuel(result, "HFO", props=vlsfo_props)
         temp_data = st.session_state["fueleu_data"] + [{
-    "연료종류": "VLSFO", "LHV": vlsfo_props["LHV"], "WtW": vlsfo_props["WtW"],
+    "연료종류": "HFO", "LHV": vlsfo_props["LHV"], "WtW": vlsfo_props["WtW"],
     "역내": delta1_in, "역외": 0.0
 }]
         result2 = calculate_fueleu_result(temp_data, fuel_defaults_FEUM)
