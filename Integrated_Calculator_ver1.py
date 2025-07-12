@@ -249,11 +249,11 @@ def generate_FEUM_fuel_defaults():
 
     # 혼합연료 추가
     fuel_defaults.update({
-        "B24(HFO)": calculate_mixed_fuel("HFO (Grades RME to RMK)", "Bio(Fame)", 0.76, fuel_defaults),
-        "B30(HFO)": calculate_mixed_fuel("HFO (Grades RME to RMK)", "Bio(Fame)", 0.7, fuel_defaults),
-        "B24(LFO)": calculate_mixed_fuel("LFO (Grades RMA to RMD)", "Bio(Fame)", 0.76, fuel_defaults),
-        "B30(LFO)": calculate_mixed_fuel("LFO (Grades RMA to RMD)", "Bio(Fame)", 0.7, fuel_defaults)
-    })
+        "B24(HFO)": calculate_mixed_fuel("HFO (Grades RME to RMK)", "Bio-diesel (Fame)", 0.76, fuel_defaults),
+        "B30(HFO)": calculate_mixed_fuel("HFO (Grades RME to RMK)", "Bio-diesel (Fame)", 0.7, fuel_defaults),
+        "B24(LFO)": calculate_mixed_fuel("LFO (Grades RMA to RMD)", "Bio-diesel (Fame)", 0.76, fuel_defaults),
+        "B30(LFO)": calculate_mixed_fuel("LFO (Grades RMA to RMD)", "Bio-diesel (Fame)", 0.7, fuel_defaults)
+        })
 
     return fuel_defaults
 
@@ -558,8 +558,8 @@ def calculate_b24_b30_outside_ton(result, fuel_type, fuel_defaults_FEUM):
     lfo_gfi = fuel_defaults_FEUM["LFO (Grades RMA to RMD)"]["WtW"]
     hfo_lhv = fuel_defaults_FEUM["HFO (Grades RME to RMK)"]["LHV"]
     hfo_gfi = fuel_defaults_FEUM["HFO (Grades RME to RMK)"]["WtW"]
-    b100_lhv = fuel_defaults_FEUM["Bio(Fame)"]["LHV"]
-    b100_gfi = fuel_defaults_FEUM["Bio(Fame)"]["WtW"]
+    b100_lhv = fuel_defaults_FEUM["Bio-diesel (Fame)"]["LHV"]
+    b100_gfi = fuel_defaults_FEUM["Bio-diesel (Fame)"]["WtW"]
 
     if fuel_type == "B24(HFO)":
         bio_ratio = 0.24
@@ -619,8 +619,8 @@ def step1_b100_required(row1, std, total_energy, total_emission, penalty, fuel_d
     inside = row1["역내"]
     outside = row1["역외"]
 
-    b100_lhv = fuel_defaults_FEUM["Bio(Fame)"]["LHV"]
-    b100_gfi = fuel_defaults_FEUM["Bio(Fame)"]["WtW"]
+    b100_lhv = fuel_defaults_FEUM["Bio-diesel (Fame)"]["LHV"]
+    b100_gfi = fuel_defaults_FEUM["Bio-diesel (Fame)"]["WtW"]
 
     # 1) 벌금 기준 에너지 (역내 100%, 역외 50%)
     fossil_energy = inside * lhv + outside * lhv * 0.5
@@ -670,8 +670,8 @@ def step2_b100_required(row2, std, total_energy, total_emission, penalty, final_
     gfi1 = row1["WtW"]
 
     # B100 정보
-    b100_lhv = fuel_defaults_FEUM["Bio(Fame)"]["LHV"]
-    b100_gfi = fuel_defaults_FEUM["Bio(Fame)"]["WtW"]
+    b100_lhv = fuel_defaults_FEUM["Bio-diesel (Fame)"]["LHV"]
+    b100_gfi = fuel_defaults_FEUM["Bio-diesel (Fame)"]["WtW"]
 
     # 이론값 계산
     fossil_energy2 = inside2 * lhv2 + outside2 * lhv2 * 0.5
@@ -726,8 +726,8 @@ def step3_b100_required(row3, std, total_energy, total_emission, penalty,
     lhv1, gfi1 = row1["LHV"], row1["WtW"]
     lhv2, gfi2 = row2["LHV"], row2["WtW"]
 
-    b100_lhv = fuel_defaults_FEUM["Bio(Fame)"]["LHV"]
-    b100_gfi = fuel_defaults_FEUM["Bio(Fame)"]["WtW"]
+    b100_lhv = fuel_defaults_FEUM["Bio-diesel (Fame)"]["LHV"]
+    b100_gfi = fuel_defaults_FEUM["Bio-diesel (Fame)"]["WtW"]
 
     # LSMGO 벌금 기준 에너지 및 배출량
     fossil_energy3 = inside3 * lhv3 + outside3 * lhv3 * 0.5
@@ -1643,12 +1643,12 @@ elif menu == "FuelEU Maritime":
                 lpg_pro_out = calculate_lng_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM, "LPG(Propane)")
                 lpg_but_out = calculate_lng_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM, "LPG(Butane)")
 
-                for fuel in ["LNG", "B24(HSFO)","B24(VLSFO)", "B30(HSFO)","B30(VLSFO)", "Bio(Fame)", "LPG(Propane)", "LPG(Butane)"]:
+                for fuel in ["LNG", "B24(HSFO)","B24(VLSFO)", "B30(HSFO)","B30(VLSFO)", "Bio-diesel (Fame)", "LPG(Propane)", "LPG(Butane)"]:
                     in_ton = calculate_required_green_fuel_inside(result, fuel, fuel_defaults_FEUM)
 
                     if fuel.startswith("B24") or fuel.startswith("B30"):
                         out_ton = calculate_b24_b30_outside_ton(result, fuel, fuel_defaults_FEUM)
-                    elif fuel == "Bio(Fame)":
+                    elif fuel == "Bio-diesel (Fame)":
                         out_ton = b100_out
                     elif fuel == "LNG":
                         out_ton = lng_out
