@@ -1624,48 +1624,63 @@ elif menu == "FuelEU Maritime":
             
             # 🔺 Deficit 상태 - 친환경 연료 필요량 
         elif result["avg_ghg_intensity"] > result["standard_now"]:
-                st.info("📊 Deficit 상태입니다. 탄소세를 '0'로 만들기 위한 친환경 연료량을 계산합니다.")
-                st.subheader("🌱 탄소세 상쇄를 위해 필요한 각 유종별 연료량")
+            st.info("📊 Deficit 상태입니다. 탄소세를 '0'로 만들기 위한 친환경 연료량을 계산합니다.")
+            st.subheader("🌱 탄소세 상쇄를 위해 필요한 각 유종별 연료량")
 
-                green_table = {
-                    "연료": [],
-                    "역내 톤수": [],
-                    "역외 톤수": []
-                }
+            green_table = {
+                "연료": [],
+                "역내 톤수": [],
+                "역외 톤수": []
+            }
 
-                # ✅ 연료 통합 및 정렬
-                merged_fuel_data = get_merged_fueleu_data(st.session_state["fueleu_data"])
-                sorted_fuels = sorted(merged_fuel_data, key=lambda x: -x["WtW"])
+            # ✅ 연료 통합 및 정렬
+            merged_fuel_data = get_merged_fueleu_data(st.session_state["fueleu_data"])
+            sorted_fuels = sorted(merged_fuel_data, key=lambda x: -x["WtW"])
 
-                # ✅ B100, LNG 역외 사용량 계산
-                b100_out = calculate_b100_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM)
-                lng_out = calculate_lng_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM, "LNG")
-                lpg_pro_out = calculate_lng_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM, "LPG(Propane)")
-                lpg_but_out = calculate_lng_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM, "LPG(Butane)")
+            # ✅ B100, LNG, LPG 역외 사용량 계산
+            b100_out = calculate_b100_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM)
+            lng_out = calculate_lng_total_required_stepwise(
+                sorted_fuels, result, fuel_defaults_FEUM, "LNG / LNG Diesel (dual fuel slow speed)"
+            )
+            lpg_pro_out = calculate_lng_total_required_stepwise(
+                sorted_fuels, result, fuel_defaults_FEUM, "LPG - Propane"
+            )
+            lpg_but_out = calculate_lng_total_required_stepwise(
+                sorted_fuels, result, fuel_defaults_FEUM, "LPG - Butane"
+            )
 
-                for fuel in ["LNG", "B24(HSFO)","B24(VLSFO)", "B30(HSFO)","B30(VLSFO)", "Bio-diesel (Fame)", "LPG(Propane)", "LPG(Butane)"]:
-                    in_ton = calculate_required_green_fuel_inside(result, fuel, fuel_defaults_FEUM)
+            for fuel in [
+                "LNG / LNG Diesel (dual fuel slow speed)",
+                "B24(HFO)", "B24(LFO)",
+                "B30(HFO)", "B30(LFO)",
+                "Bio-diesel (Fame)",
+                "LPG - Propane", "LPG - Butane"
+            ]:
+                in_ton = calculate_required_green_fuel_inside(result, fuel, fuel_defaults_FEUM)
 
-                    if fuel.startswith("B24") or fuel.startswith("B30"):
-                        out_ton = calculate_b24_b30_outside_ton(result, fuel, fuel_defaults_FEUM)
-                    elif fuel == "Bio-diesel (Fame)":
-                        out_ton = b100_out
-                    elif fuel == "LNG":
-                        out_ton = lng_out
-                    elif fuel == "LPG(Propane)":
-                        out_ton = lpg_pro_out
-                    elif fuel == "LPG(Butane)":
-                        out_ton = lpg_but_out
+                if fuel.startswith("B24") or fuel.startswith("B30"):
+                    out_ton = calculate_b24_b30_outside_ton(result, fuel, fuel_defaults_FEUM)
+                elif fuel == "Bio-diesel (Fame)":
+                    out_ton = b100_out
+                elif fuel == "LNG / LNG Diesel (dual fuel slow speed)":
+                    out_ton = lng_out
+                elif fuel == "LPG - Propane":
+                    out_ton = lpg_pro_out
+                elif fuel == "LPG - Butane":
+                    out_ton = lpg_but_out
+                else:
+                    out_ton = 0.0
 
-                    green_table["연료"].append(fuel)
-                    green_table["역내 톤수"].append(in_ton)
-                    green_table["역외 톤수"].append(out_ton)
-                
-                # ✅ 쉼표 포맷 처리
-                df_green = pd.DataFrame(green_table)
-                for col in ["역내 톤수", "역외 톤수"]:
-                    df_green[col] = df_green[col].apply(lambda x: f"{x:,.3f}")
-                st.dataframe(pd.DataFrame(df_green), use_container_width=True, hide_index=True)
+                green_table["연료"].append(fuel)
+                green_table["역내 톤수"].append(in_ton)
+                green_table["역외 톤수"].append(out_ton)
+
+            # ✅ 쉼표 포맷 처리
+            df_green = pd.DataFrame(green_table)
+            for col in ["역내 톤수", "역외 톤수"]:
+                df_green[col] = df_green[col].apply(lambda x: f"{x:,.3f}")
+            st.dataframe(pd.DataFrame(df_green), use_container_width=True, hide_index=True)
+
                 
                 # 📈 GHG Intensity 기준선 vs 평균 GHG Intensity 그래프 및 연도별 CB/벌금 테이블
         if "avg_ghg_intensity" in result and "total_energy" in result:
