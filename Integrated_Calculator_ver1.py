@@ -1652,7 +1652,7 @@ elif menu == "FuelEU Maritime":
 
                 if fuel.startswith("B24") or fuel.startswith("B30"):
                     out_ton = calculate_b24_b30_outside_ton(result, fuel, fuel_defaults_FEUM)
-                elif fuel == "Bio-diesel (Fame)":
+                elif fuel == "Bio(Fame)":
                     out_ton = b100_out
                 elif fuel == "LNG / LNG Diesel (dual fuel slow speed)":
                     out_ton = lng_out
