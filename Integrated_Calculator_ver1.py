@@ -151,15 +151,6 @@ def generate_FEUM_fuel_defaults():
 
     # WtT 계수 (RED II)
     FEUM_wtt_factors = {
-        "VLSFO": 13.5,
-        "HSFO": 13.5,
-        "LSMGO": 14.4,
-        "LNG": 18.5,
-        "LPG(Propane)": 7.8,
-        "LPG(Butane)": 7.8,
-        "Bio(Fame)": 14.6 - 2.834 / 0.037
-    }
-    FEUM_wtt_factors = {
         # 📘 Fossil Fuels (표 1)
         "HFO (Grades RME to RMK)": 13.5,
         "LFO (Grades RMA to RMD)": 13.2,
@@ -179,7 +170,7 @@ def generate_FEUM_fuel_defaults():
 
         # 📗 Biofuels (표 2)
         "Bio-ethanol (wheat straw)": -55.15185,
-        "Bio-diesel (Fame)": 14.6 - 2.834 / 0.037,
+        "Bio(Fame)": 14.6 - 2.834 / 0.037,
         "Hydrotreated Vegetable Oil (waste cooking oil)": -54.79545,
         "Liquefied Biomethane (bio-waste) / Otto (dual fuel medium speed)": -35.83000,
         "Liquefied Biomethane / Otto (dual fuel slow speed)": -35.83000,
