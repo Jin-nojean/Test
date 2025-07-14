@@ -219,7 +219,7 @@ def generate_FEUM_fuel_defaults():
             slip_emission = (slip_CO2 * gwp["CO2"] + slip_CH4 * gwp["CH4"] + slip_N2O * gwp["N2O"])
             rwd = ttw.get("RWD", 0)
             total_emission = (1 - slip) * combustion + slip * slip_emission
-            return round(total_emission / LCV /(1+RWD), 5)
+            return round(total_emission / LCV /(1+rwd), 5)
         else:
             raise ValueError(f"Unexpected slip value: {slip}")
 
