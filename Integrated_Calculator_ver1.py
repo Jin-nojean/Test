@@ -250,10 +250,10 @@ def generate_FEUM_fuel_defaults():
 
     # 혼합연료 추가
     fuel_defaults.update({
-        "B24(HFO)": calculate_mixed_fuel("HFO (Grades RME to RMK)", "Bio-diesel (Fame)", 0.76, fuel_defaults),
-        "B30(HFO)": calculate_mixed_fuel("HFO (Grades RME to RMK)", "Bio-diesel (Fame)", 0.7, fuel_defaults),
-        "B24(LFO)": calculate_mixed_fuel("LFO (Grades RMA to RMD)", "Bio-diesel (Fame)", 0.76, fuel_defaults),
-        "B30(LFO)": calculate_mixed_fuel("LFO (Grades RMA to RMD)", "Bio-diesel (Fame)", 0.7, fuel_defaults)
+        "B24(HFO)": calculate_mixed_fuel("HFO (Grades RME to RMK)", "Bio(Fame)", 0.76, fuel_defaults),
+        "B30(HFO)": calculate_mixed_fuel("HFO (Grades RME to RMK)", "Bio(Fame)", 0.7, fuel_defaults),
+        "B24(LFO)": calculate_mixed_fuel("LFO (Grades RMA to RMD)", "Bio(Fame)", 0.76, fuel_defaults),
+        "B30(LFO)": calculate_mixed_fuel("LFO (Grades RMA to RMD)", "Bio(Fame)", 0.7, fuel_defaults)
         })
 
     return fuel_defaults
@@ -271,9 +271,9 @@ def expand_mixed_fuel_GFI(fuel_data: list[dict], fuel_defaults_GFI: dict) -> lis
 
         if fuel_type == "B24(VLSFO)":
             expanded_rows.append({
-                "연료종류": "VLSFO",
-                "LHV": fuel_defaults_GFI["VLSFO"]["LHV"],
-                "WtW": fuel_defaults_GFI["VLSFO"]["WtW"],
+                "연료종류": "LFO (Grades RMA to RMD)",
+                "LHV": fuel_defaults_GFI["LFO (Grades RMA to RMD)"]["LHV"],
+                "WtW": fuel_defaults_GFI["LFO (Grades RMA to RMD)"]["WtW"],
                 "사용량": amt * 0.76
             })
             expanded_rows.append({
@@ -284,9 +284,9 @@ def expand_mixed_fuel_GFI(fuel_data: list[dict], fuel_defaults_GFI: dict) -> lis
             })
         elif fuel_type == "B24(HSFO)":
             expanded_rows.append({
-                "연료종류": "HSFO",
-                "LHV": fuel_defaults_GFI["HSFO"]["LHV"],
-                "WtW": fuel_defaults_GFI["HSFO"]["WtW"],
+                "연료종류": "HFO (Grades RME to RMK)",
+                "LHV": fuel_defaults_GFI["HFO (Grades RME to RMK)"]["LHV"],
+                "WtW": fuel_defaults_GFI["HFO (Grades RME to RMK)"]["WtW"],
                 "사용량": amt * 0.76
             })
             expanded_rows.append({
@@ -297,9 +297,9 @@ def expand_mixed_fuel_GFI(fuel_data: list[dict], fuel_defaults_GFI: dict) -> lis
             })
         elif fuel_type == "B30(VLSFO)":
             expanded_rows.append({
-                "연료종류": "VLSFO",
-                "LHV": fuel_defaults_GFI["VLSFO"]["LHV"],
-                "WtW": fuel_defaults_GFI["VLSFO"]["WtW"],
+                "연료종류": "LFO (Grades RMA to RMD)",
+                "LHV": fuel_defaults_GFI["LFO (Grades RMA to RMD)"]["LHV"],
+                "WtW": fuel_defaults_GFI["LFO (Grades RMA to RMD)"]["WtW"],
                 "사용량": amt * 0.7
             })
             expanded_rows.append({
@@ -310,9 +310,9 @@ def expand_mixed_fuel_GFI(fuel_data: list[dict], fuel_defaults_GFI: dict) -> lis
             })
         elif fuel_type == "B30(HSFO)":
             expanded_rows.append({
-                "연료종류": "HSFO",
-                "LHV": fuel_defaults_GFI["HSFO"]["LHV"],
-                "WtW": fuel_defaults_GFI["HSFO"]["WtW"],
+                "연료종류": "HFO (Grades RME to RMK)",
+                "LHV": fuel_defaults_GFI["HFO (Grades RME to RMK)"]["LHV"],
+                "WtW": fuel_defaults_GFI["HFO (Grades RME to RMK)"]["WtW"],
                 "사용량": amt * 0.7
             })
             expanded_rows.append({
