@@ -195,10 +195,10 @@ def generate_FEUM_fuel_defaults():
         "e-LNG / Otto (dual fuel slow speed)": -46.2,
         "e-LNG / Diesel (dual fuel slow speed)": -46.2,
         "e-LNG / LBSI": -46.2,
-        "e-H2 / Fuel Cells": 0.0,
-        "e-H2 / ICE": 0.0,
-        "e-NH3 / Fuel Cells": 0.0,
-        "e-NH3 / ICE": 0.0
+        "e-H2 / Fuel Cells": 10.0,
+        "e-H2 / ICE": 10.0,
+        "e-NH3 / Fuel Cells": 10.0,
+        "e-NH3 / ICE": 10.0
     }
 
 
