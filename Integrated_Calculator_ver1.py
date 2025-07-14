@@ -1588,7 +1588,7 @@ elif menu == "FuelEU Maritime":
         if result["avg_ghg_intensity"] < result["standard_now"]:
             st.info("📊 Surplus 상태입니다. Pooling 가능한 각 유종별 연료량을 계산합니다.")
 
-            pooling_candidate_names = ["VLSFO", "HSFO", "LSMGO"]
+            pooling_candidate_names = ["HFO (Grades RME to RMK)", "LFO (Grades RMA to RMD)", "MDO MGO (Grades DMX to DMB)"]
             pooling_candidates = {
                 fuel: {
                     "LHV": fuel_defaults_FEUM[fuel]["LHV"],
