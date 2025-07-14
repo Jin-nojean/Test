@@ -550,8 +550,8 @@ def calculate_b24_b30_outside_ton(result, fuel_type, fuel_defaults_FEUM):
     lfo_gfi = fuel_defaults_FEUM["LFO (Grades RMA to RMD)"]["WtW"]
     hfo_lhv = fuel_defaults_FEUM["HFO (Grades RME to RMK)"]["LHV"]
     hfo_gfi = fuel_defaults_FEUM["HFO (Grades RME to RMK)"]["WtW"]
-    b100_lhv = fuel_defaults_FEUM["Bio-diesel (Fame)"]["LHV"]
-    b100_gfi = fuel_defaults_FEUM["Bio-diesel (Fame)"]["WtW"]
+    b100_lhv = fuel_defaults_FEUM["Bio(Fame)"]["LHV"]
+    b100_gfi = fuel_defaults_FEUM["Bio(Fame)"]["WtW"]
 
     if fuel_type == "B24(HFO)":
         bio_ratio = 0.24
@@ -611,8 +611,8 @@ def step1_b100_required(row1, std, total_energy, total_emission, penalty, fuel_d
     inside = row1["역내"]
     outside = row1["역외"]
 
-    b100_lhv = fuel_defaults_FEUM["Bio-diesel (Fame)"]["LHV"]
-    b100_gfi = fuel_defaults_FEUM["Bio-diesel (Fame)"]["WtW"]
+    b100_lhv = fuel_defaults_FEUM["Bio(Fame)"]["LHV"]
+    b100_gfi = fuel_defaults_FEUM["Bio(Fame)"]["WtW"]
 
     # 1) 벌금 기준 에너지 (역내 100%, 역외 50%)
     fossil_energy = inside * lhv + outside * lhv * 0.5
@@ -662,8 +662,8 @@ def step2_b100_required(row2, std, total_energy, total_emission, penalty, final_
     gfi1 = row1["WtW"]
 
     # B100 정보
-    b100_lhv = fuel_defaults_FEUM["Bio-diesel (Fame)"]["LHV"]
-    b100_gfi = fuel_defaults_FEUM["Bio-diesel (Fame)"]["WtW"]
+    b100_lhv = fuel_defaults_FEUM["Bio(Fame)"]["LHV"]
+    b100_gfi = fuel_defaults_FEUM["Bio(Fame)"]["WtW"]
 
     # 이론값 계산
     fossil_energy2 = inside2 * lhv2 + outside2 * lhv2 * 0.5
@@ -718,8 +718,8 @@ def step3_b100_required(row3, std, total_energy, total_emission, penalty,
     lhv1, gfi1 = row1["LHV"], row1["WtW"]
     lhv2, gfi2 = row2["LHV"], row2["WtW"]
 
-    b100_lhv = fuel_defaults_FEUM["Bio-diesel (Fame)"]["LHV"]
-    b100_gfi = fuel_defaults_FEUM["Bio-diesel (Fame)"]["WtW"]
+    b100_lhv = fuel_defaults_FEUM["Bio(Fame)"]["LHV"]
+    b100_gfi = fuel_defaults_FEUM["Bio(Fame)"]["WtW"]
 
     # LSMGO 벌금 기준 에너지 및 배출량
     fossil_energy3 = inside3 * lhv3 + outside3 * lhv3 * 0.5
@@ -1645,7 +1645,7 @@ elif menu == "FuelEU Maritime":
                 "LNG / LNG Diesel (dual fuel slow speed)",
                 "B24(HFO)", "B24(LFO)",
                 "B30(HFO)", "B30(LFO)",
-                "Bio-diesel (Fame)",
+                "Bio(Fame)",
                 "LPG - Propane", "LPG - Butane"
             ]:
                 in_ton = calculate_required_green_fuel_inside(result, fuel, fuel_defaults_FEUM)
