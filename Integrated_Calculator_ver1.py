@@ -127,7 +127,7 @@ def generate_FEUM_fuel_defaults():
 
     # 📗 Annex II Biofuels
     "Bio-ethanol (wheat straw)": {"CO2": 1.913, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0270, "SLIP": 0.0,"RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
-    "Bio-diesel (Fame)": {"CO2": 2.834, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0370, "SLIP": 0.0,"RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
+    "Bio(Fame)": {"CO2": 2.834, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0370, "SLIP": 0.0,"RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
     "Hydrotreated Vegetable Oil (waste cooking oil)": {"CO2": 3.115, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0440, "SLIP": 0.0,"RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
     "Liquefied Biomethane (bio-waste) / Otto (dual fuel medium speed)": {"CO2": 2.750, "CH4": 0.00000, "N2O": 0.00011, "LCV": 0.0500, "SLIP": 0.031,"RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
     "Liquefied Biomethane / Otto (dual fuel slow speed)": {"CO2": 2.750, "CH4": 0.00000, "N2O": 0.00011, "LCV": 0.0500, "SLIP": 0.017,"RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
