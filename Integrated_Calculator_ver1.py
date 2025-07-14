@@ -137,16 +137,16 @@ def generate_FEUM_fuel_defaults():
     "Other Production Pathways": {"CO2": 3.115, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0370, "SLIP": 0.0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
 
     # 📙 Annex II e-Fuels
-    "e-diesel": {"CO2": 3.206, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0427, "SLIP": 0.0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
-    "e-methanol": {"CO2": 1.375, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0199, "SLIP": 0.0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
-    "e-LNG / Otto (dual fuel medium speed)": {"CO2": 2.750, "CH4": 0.00000, "N2O": 0.00011, "LCV": 0.0491, "SLIP": 0.031, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
-    "e-LNG / Otto (dual fuel slow speed)": {"CO2": 2.750, "CH4": 0.00000, "N2O": 0.00011, "LCV": 0.0491, "SLIP": 0.017, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
-    "e-LNG / Diesel (dual fuel slow speed)": {"CO2": 2.750, "CH4": 0.00000, "N2O": 0.00011, "LCV": 0.0491, "SLIP": 0.002, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
-    "e-LNG / LBSI": {"CO2": 2.750, "CH4": 0.00000, "N2O": 0.00011, "LCV": 0.0491, "SLIP": 0.026, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
-    "e-H2 / Fuel Cells": {"CO2": 0.000, "CH4": 0.00000, "N2O": 0.00000, "LCV": 0.1200, "SLIP": 0.0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
-    "e-H2 / ICE": {"CO2": 0.000, "CH4": 0.00000, "N2O": 0.00018, "LCV": 0.1200, "SLIP": 0.0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
-    "e-NH3 / Fuel Cells": {"CO2": 0.000, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0186, "SLIP": 0.0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
-    "e-NH3 / ICE": {"CO2": 0.000, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0186, "SLIP": 0.0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0}
+    "e-diesel": {"CO2": 3.206, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0427, "SLIP": 0.0,"RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
+    "e-methanol": {"CO2": 1.375, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0199, "SLIP": 0.0,"RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
+    "e-LNG / Otto (dual fuel medium speed)": {"CO2": 2.750, "CH4": 0.00000, "N2O": 0.00011, "LCV": 0.0491, "SLIP": 0.031,"RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
+    "e-LNG / Otto (dual fuel slow speed)": {"CO2": 2.750, "CH4": 0.00000, "N2O": 0.00011, "LCV": 0.0491, "SLIP": 0.017,"RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
+    "e-LNG / Diesel (dual fuel slow speed)": {"CO2": 2.750, "CH4": 0.00000, "N2O": 0.00011, "LCV": 0.0491, "SLIP": 0.002, "RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
+    "e-LNG / LBSI": {"CO2": 2.750, "CH4": 0.00000, "N2O": 0.00011, "LCV": 0.0491, "SLIP": 0.026, "RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
+    "e-H2 / Fuel Cells": {"CO2": 0.000, "CH4": 0.00000, "N2O": 0.00000, "LCV": 0.1200, "SLIP": 0.0, "RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
+    "e-H2 / ICE": {"CO2": 0.000, "CH4": 0.00000, "N2O": 0.00018, "LCV": 0.1200, "SLIP": 0.0, "RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
+    "e-NH3 / Fuel Cells": {"CO2": 0.000, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0186, "SLIP": 0.0, "RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0},
+    "e-NH3 / ICE": {"CO2": 0.000, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0186, "SLIP": 0.0, "RWD" : 0, "CO2_slip": 0.0, "CH4_slip": 0.0, "N2O_slip": 0.0}
 }
 
     # WtT 계수 (RED II)
@@ -217,8 +217,9 @@ def generate_FEUM_fuel_defaults():
             slip_CH4 = ttw.get("CH4_slip", 0)
             slip_N2O = ttw.get("N2O_slip", 0)
             slip_emission = (slip_CO2 * gwp["CO2"] + slip_CH4 * gwp["CH4"] + slip_N2O * gwp["N2O"])
+            rwd = ttw.get("RWD", 0)
             total_emission = (1 - slip) * combustion + slip * slip_emission
-            return round(total_emission / LCV, 5)
+            return round(total_emission / LCV /(1+RWD), 5)
         else:
             raise ValueError(f"Unexpected slip value: {slip}")
 
