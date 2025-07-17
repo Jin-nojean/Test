@@ -466,7 +466,7 @@ def calculate_fueleu_result(fuel_data: list[dict],fuel_defaults_FEUM: dict) -> d
 
     avg_ghg_intensity = round(total_emission * 1_000_000 / total_energy, 4) if total_energy > 0 else 0
     standard_now = round(91.16 * 0.98, 4)
-    cb = round((avg_ghg_intensity - standard_now) * total_energy / 1_000_000, 4)
+    cb = round((standard_now - avg_ghg_intensity) * total_energy / 1_000_000, 4)
     
     result = {
         "standard_now": standard_now,
@@ -475,7 +475,7 @@ def calculate_fueleu_result(fuel_data: list[dict],fuel_defaults_FEUM: dict) -> d
     }
 
     if avg_ghg_intensity > standard_now:
-        penalty_eur = round((avg_ghg_intensity - standard_now) * total_energy * 2400 / 41000 / avg_ghg_intensity, 0)
+        penalty_eur = round((standard_now - avg_ghg_intensity) * total_energy * 2400 / 41000 / avg_ghg_intensity, 0)
     else:
         penalty_eur = 0
 
