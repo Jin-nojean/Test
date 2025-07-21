@@ -1734,10 +1734,10 @@ elif menu == "FuelEU Maritime":
         grouped_compliance = []
 
         for start, end, std_value in steps:
-            delta = avg_ghg_intensity - std_value
+            delta = std_value - avg_ghg_intensity
             cb = delta * total_energy / 1_000_000  # tCO₂eq
 
-            if delta > 0:
+            if delta < 0:
                 tier = "Deficit"
                 penalty = delta * total_energy * 2400 / 41000 / avg_ghg_intensity
             else:
