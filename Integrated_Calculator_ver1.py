@@ -1564,7 +1564,7 @@ elif menu == "FuelEU Maritime":
                 
         #st.write(f"**예상 벌금:** € {result['penalty_eur']:,.3f}")
         # Surplus vs Deficit 분기
-        if result["avg_ghg_intensity"] > result["standard_now"]:
+        if result["avg_ghg_intensity"] < result["standard_now"]:
             # Deficit → 벌금 표시
             st.write(f"**예상 탄소세:** € {result['penalty_eur']:,.0f}")
         else:
