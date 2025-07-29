@@ -1547,7 +1547,7 @@ elif menu == "FuelEU Maritime":
         st.subheader("📄 FuelEU Maritime 계산 결과")
         df_result = result["df_result"]
         # 👉 쉼표 포함 포맷팅 적용
-        for col in ["반영 LCV (MJ)", "배출량 (tCO₂eq)", "GHG Intensity (gCO2eq/MJ)"]:
+        for col in ["반영 LCV (MJ)", "배출량 (tCO₂eq)", "GHG Intensity (gCO₂eq/MJ)"]:
             if col in df_result.columns:
                 df_result[col] = df_result[col].apply(lambda x: f"{float(str(x).replace(',', '')):,.2f}")
         st.dataframe(df_result, use_container_width=True, hide_index=True)
