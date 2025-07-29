@@ -1488,7 +1488,7 @@ elif menu == "FuelEU Maritime":
         with cols[3]:
             st.markdown(f"<div style='padding-top: 9px'><span style='color: green;'>{row['LHV']:,}</span></div>", unsafe_allow_html=True)
         with cols[4]:
-            st.markdown(f"<div style='padding-top: 9px'><span style='color: green;'>{row['WtW']:,}</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='padding-top: 9px'><span style='color: green;'>{row['WtW']:,.5f}</span></div>", unsafe_allow_html=True)
         with cols[5]:
             st.markdown(f"<div style='padding-top: 9px'><span style='color: green;'>{row['역내']:,}</span></div>", unsafe_allow_html=True)
         with cols[6]:
