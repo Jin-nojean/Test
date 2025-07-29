@@ -201,7 +201,7 @@ def generate_FEUM_fuel_defaults():
 
         if slip == 0:
             co2eq = ttw["CO2"] * gwp["CO2"] + ttw["CH4"] * gwp["CH4"] + ttw["N2O"] * gwp["N2O"]
-            return round(co2eq / LCV, 5)
+            return round(co2eq / LCV, 15)
         elif slip > 0:
             combustion = ttw["CO2"] * gwp["CO2"] + ttw["CH4"] * gwp["CH4"] + ttw["N2O"] * gwp["N2O"]
             slip_CO2 = ttw.get("CO2_slip", 0)
@@ -210,12 +210,12 @@ def generate_FEUM_fuel_defaults():
             slip_emission = (slip_CO2 * gwp["CO2"] + slip_CH4 * gwp["CH4"] + slip_N2O * gwp["N2O"])
             rwd = ttw.get("RWD", 0)
             total_emission = (1 - slip) * combustion + slip * slip_emission
-            return round(total_emission / LCV, 5)
+            return round(total_emission / LCV, 15)
         else:
             raise ValueError(f"Unexpected slip value: {slip}")
 
     def calculate_wtw(fuel_type: str) -> float:
-        return round(FEUM_wtt_factors.get(fuel_type, 0) + calculate_ttw(fuel_type), 5)
+        return round(FEUM_wtt_factors.get(fuel_type, 0) + calculate_ttw(fuel_type), 15)
 
     def calculate_mixed_fuel(fossil_name, bio_name, fossil_ratio, fuel_defaults_FEUM):
         bio_ratio = 1 - fossil_ratio
@@ -228,14 +228,14 @@ def generate_FEUM_fuel_defaults():
         total_emission = fossil_WtW * fossil_LHV * fossil_ratio + bio_WtW * bio_LHV * bio_ratio
         WtW_mix = total_emission / LHV_mix
 
-        return {"LHV": round(LHV_mix, 2), "WtW": round(WtW_mix, 8)}
+        return {"LHV": round(LHV_mix, 15), "WtW": round(WtW_mix, 15)}
 
 
     # 기본 연료 정의
     fuel_defaults = {}
     for fuel in FEUM_ttw_factors:
         LCV = FEUM_ttw_factors[fuel]["LCV"]
-        LHV = round(LCV * 1_000_000, 0)
+        LHV = round(LCV * 1_000_000, 15)
         WtW = calculate_wtw(fuel)
         fuel_defaults[fuel] = {"LHV": LHV, "WtW": WtW}
 
@@ -457,16 +457,16 @@ def calculate_fueleu_result(fuel_data: list[dict],fuel_defaults_FEUM: dict) -> d
         table.append({
             "No.": idx,
             "연료종류": row["연료종류"],
-            "GHG Intensity (gCO₂eq/MJ)": round(ghg_intensity, 4),
-            "반영 LCV (MJ)": round(used_energy, 4),
-            "배출량 (tCO₂eq)": round(emission, 4)
+            "GHG Intensity (gCO₂eq/MJ)": round(ghg_intensity, 15),
+            "반영 LCV (MJ)": round(used_energy, 15),
+            "배출량 (tCO₂eq)": round(emission, 15)
         })
         total_energy += used_energy
         total_emission += emission
 
-    avg_ghg_intensity = round(total_emission * 1_000_000 / total_energy, 4) if total_energy > 0 else 0
-    standard_now = round(91.16 * 0.98, 4)
-    cb = round((standard_now - avg_ghg_intensity) * total_energy / 1_000_000, 4)
+    avg_ghg_intensity = round(total_emission * 1_000_000 / total_energy, 15) if total_energy > 0 else 0
+    standard_now = round(91.16 * 0.98, 15)
+    cb = round((standard_now - avg_ghg_intensity) * total_energy / 1_000_000, 15)
     
     result = {
         "standard_now": standard_now,
@@ -475,7 +475,7 @@ def calculate_fueleu_result(fuel_data: list[dict],fuel_defaults_FEUM: dict) -> d
     }
 
     if avg_ghg_intensity > standard_now:
-        penalty_eur = round((standard_now - avg_ghg_intensity) * total_energy * 2400 / 41000 / avg_ghg_intensity, 0)
+        penalty_eur = round((standard_now - avg_ghg_intensity) * total_energy * 2400 / 41000 / avg_ghg_intensity, 15)
     else:
         penalty_eur = 0
 
@@ -517,7 +517,7 @@ def calculate_pooling_ton_by_fuel(result: dict, fuel_type: str, props: dict) -> 
         return 0.0
 
     ton = numerator / denominator
-    return max(round(ton, 4), 0.0)
+    return max(round(ton, 15), 0.0)
 
 # LNG, LPG, B100, B24, B30 역내 사용량 계산
 def calculate_required_green_fuel_inside(result, fuel_type, fuel_defaults_FEUM):
@@ -535,7 +535,7 @@ def calculate_required_green_fuel_inside(result, fuel_type, fuel_defaults_FEUM):
         return 0.0
 
     required_mj = numerator / denominator
-    return round(required_mj, 4)
+    return round(required_mj, 15)
 
 # B24, B30 역외 사용량 계산
 def calculate_b24_b30_outside_ton(result, fuel_type, fuel_defaults_FEUM):
@@ -645,7 +645,7 @@ def step1_b100_required(row1, std, total_energy, total_emission, penalty, fuel_d
 
     # 최종값 = 작은 값
     final_b100 = min(theo_b100, actual_b100)
-    return max(round(final_b100, 4), 0.0) if final_b100 > 0 else 0.0
+    return max(round(final_b100, 15), 0.0) if final_b100 > 0 else 0.0
 
 #B100 역외 사용량 두번째 스텝
 def step2_b100_required(row2, std, total_energy, total_emission, penalty, final_b100_step1, row1, fuel_defaults_FEUM):
@@ -702,7 +702,7 @@ def step2_b100_required(row2, std, total_energy, total_emission, penalty, final_
 
     # 최종값: 이론값 vs 실질값 중 작은 값
     final_b100_2 = min(theo_b100_2, actual_b100)
-    return max(round(final_b100_2, 4), 0.0) if final_b100_2 > 0 else 0.0
+    return max(round(final_b100_2, 15), 0.0) if final_b100_2 > 0 else 0.0
 
 #B100 역외 사용량 세번째 스텝
 def step3_b100_required(row3, std, total_energy, total_emission, penalty,
@@ -761,7 +761,7 @@ def step3_b100_required(row3, std, total_energy, total_emission, penalty,
 
     # 최종값 선택
     final_b100 = min(theo_b100, actual_b100)
-    return max(round(final_b100, 4), 0.0) if final_b100 > 0 else 0.0
+    return max(round(final_b100, 15), 0.0) if final_b100 > 0 else 0.0
 
 # B100 역외 총량 계산
 def calculate_b100_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM):
@@ -790,7 +790,7 @@ def calculate_b100_total_required_stepwise(sorted_fuels, result, fuel_defaults_F
                                     step1, step2, sorted_fuels[0], sorted_fuels[1], fuel_defaults_FEUM)
         b100_total += step3
 
-    return round(b100_total, 3)
+    return round(b100_total, 15)
 
 #GAS 역외 사용량 첫번째 스텝
 def step1_gas_required(row1, std, total_energy, total_emission, penalty, fuel_defaults_FEUM, green_fuel_type):
@@ -825,7 +825,7 @@ def step1_gas_required(row1, std, total_energy, total_emission, penalty, fuel_de
         actual_lng = 0
 
     final_lng = min(theo_lng, actual_lng)
-    return max(round(final_lng, 4), 0.0) if final_lng > 0 else 0.0
+    return max(round(final_lng, 15), 0.0) if final_lng > 0 else 0.0
 
 #GAS 역외 사용량 두번째 스텝
 def step2_gas_required(row2, std, total_energy, total_emission, penalty, final_lng_step1, row1, fuel_defaults_FEUM, green_fuel_type):
@@ -867,7 +867,7 @@ def step2_gas_required(row2, std, total_energy, total_emission, penalty, final_l
         actual_lng = 0
 
     final_lng_2 = min(theo_lng_2, actual_lng)
-    return max(round(final_lng_2, 3), 0.0) if final_lng_2 > 0 else 0.0
+    return max(round(final_lng_2, 15), 0.0) if final_lng_2 > 0 else 0.0
 
 #GAS 역외 사용량 세번째 스텝
 def step3_gas_required(row3, std, total_energy, total_emission, penalty,
@@ -912,7 +912,7 @@ def step3_gas_required(row3, std, total_energy, total_emission, penalty,
         actual_lng = 0
 
     final_lng = min(theo_lng, actual_lng)
-    return max(round(final_lng, 4), 0.0) if final_lng > 0 else 0.0
+    return max(round(final_lng, 15), 0.0) if final_lng > 0 else 0.0
 
 # GAS 역외 총량 계산
 def calculate_lng_total_required_stepwise(sorted_fuels, result, fuel_defaults_FEUM, green_fuel_type):
@@ -941,7 +941,7 @@ def calculate_lng_total_required_stepwise(sorted_fuels, result, fuel_defaults_FE
                                    step1, step2, sorted_fuels[0], sorted_fuels[1], fuel_defaults_FEUM,green_fuel_type)  # ✅ 추가!
         lng_total += step3
 
-    return round(lng_total, 4)
+    return round(lng_total, 15)
 
 # 🌱 GFI 계산기(IMO 중기조치)
 if menu == "GFI 계산기(IMO 중기조치)":
