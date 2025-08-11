@@ -24,14 +24,14 @@ def generate_GFI_fuel_defaults():
     }
     # GFI 계산기용 TtW 계수 / MEPC80차 기준
     GFI_ttw_factors = {
-        "VLSFO": {"CO2": 3.114, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0402, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "HSFO": {"CO2": 3.114, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0402, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "LSMGO": {"CO2": 3.206, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0427, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "LNG / LNG Otto (dual fuel medium speed)": {"CO2": 2.75, "CH4": 0, "N2O": 0.00011, "LCV": 0.0480, "SLIP": 0.035, "RWD": 0, "CO2_slip": 0.0, "CH4_slip": 1, "N2O_slip": 0.0},
-        "LNG / LNG Diesel (dual fuel slow speed)": {"CO2": 2.750, "CH4": 0.00000, "N2O": 0.00011, "LCV": 0.0480, "SLIP": 0.0015, "RWD": 0, "CO2_slip": 0.0, "CH4_slip": 1, "N2O_slip": 0.0},
-        "LPG(Propane)": {"CO2": 3.0, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0463, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "LPG(Butane)": {"CO2": 3.03, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0457, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "Bio(Fame)": {"CO2": 2.834, "CH4": 0, "N2O": 0, "LCV": 0.0372, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0} #바이오디젤은 RED II 기준 / 아직 안나왔으니
+        "VLSFO": {"CO2": 3.114, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0402, "SLIP": 0, "Cfug": 0.0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
+        "HSFO": {"CO2": 3.114, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0402, "SLIP": 0, "Cfug": 0.0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
+        "LSMGO": {"CO2": 3.206, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0427, "SLIP": 0, "Cfug": 0.0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
+        "LNG / LNG Otto (dual fuel medium speed)": {"CO2": 2.75, "CH4": 0, "N2O": 0.00011, "LCV": 0.0480, "SLIP": 0.035, "Cfug": 0.0, "RWD": 0, "CO2_slip": 0.0, "CH4_slip": 1, "N2O_slip": 0.0},
+        "LNG / LNG Diesel (dual fuel slow speed)": {"CO2": 2.75, "CH4": 0, "N2O": 0.00011, "LCV": 0.0480, "SLIP": 0.0015, "Cfug": 0.0, "RWD": 0, "CO2_slip": 0.0, "CH4_slip": 1, "N2O_slip": 0.0},
+        "LPG(Propane)": {"CO2": 3.0, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0463, "SLIP": 0, "Cfug": 0.0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
+        "LPG(Butane)": {"CO2": 3.03, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0457, "SLIP": 0, "Cfug": 0.0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
+        "Bio(Fame)": {"CO2": 2.834, "CH4": 0, "N2O": 0, "LCV": 0.0372, "SLIP": 0, "Cfug": 0.0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0} #바이오디젤은 RED II 기준 / 아직 안나왔으니
     }
     # GFI 계산기용 WtT 계수
     GFI_wtt_factors = {
@@ -45,59 +45,85 @@ def generate_GFI_fuel_defaults():
         "Bio(Fame)": 20.8 - 2.834 / 0.0372# WtT값이 일단 안나옴
     }
     # GFI WtW 계수 함수 / 슬립 처리는 우선 FuelEU Maritime과 동일하게 사용
+
     def calculate_ttw(fuel_type: str) -> float:
         ttw = GFI_ttw_factors[fuel_type]
         gwp = GFI_gwp_factors
-        LCV = ttw["LCV"]
-        slip = ttw["SLIP"]
 
-        if slip == 0:
-            # 기본 연소 배출량
-            co2eq = ttw["CO2"] * gwp["CO2"] + ttw["CH4"] * gwp["CH4"] + ttw["N2O"] * gwp["N2O"]
-            return round(co2eq / LCV, 5)
-        # Slip 처리
-        elif slip > 0:
-            combustion = (
-            ttw["CO2"] * gwp["CO2"] + ttw["CH4"] * gwp["CH4"] + ttw["N2O"] * gwp["N2O"])
-            # 슬립분
-            slip_CO2 = ttw.get("CO2_slip", 0)
-            slip_CH4 = ttw.get("CH4_slip", 0)
-            slip_N2O = ttw.get("N2O_slip", 0)
-            slip_emission = (slip_CO2 * gwp["CO2"] + slip_CH4 * gwp["CH4"] + slip_N2O * gwp["N2O"])
-            total_emission = (1 - slip) * combustion + slip * slip_emission
-            return round(total_emission / LCV, 5)
-        else:
-            raise ValueError(f"Unexpected slip value: {slip}")
+        LCV = float(ttw["LCV"])             # MJ/g
+        slip_frac = float(ttw.get("SLIP", 0.0))   # 0~1 fraction
+        if not (0.0 <= slip_frac <= 1.0):
+            raise ValueError("SLIP must be a fraction in [0,1].")
+
+        cfug_pct = float(ttw.get("Cfug", 0.0))    # %
+        if not (0.0 <= cfug_pct <= 100.0):
+            raise ValueError("Cfug must be in [0,100].")
+
+        # 연소부 배출계수 (g GHG / g fuel)
+        CfCO2 = float(ttw.get("CO2", 0.0))
+        CfCH4 = float(ttw.get("CH4", 0.0))
+        CfN2O = float(ttw.get("N2O", 0.0))
+
+        # IMO 식: C_slip_ship = C_slip × (1 − Cfug/100)
+        c_slip_ship_frac = slip_frac * (1.0 - cfug_pct / 100.0)
+        # 총 비산분(연소되지 않은 연료의 분율) = C_slip_ship + Cfug
+        total_unoxidized_frac = c_slip_ship_frac + (cfug_pct / 100.0)
+        if total_unoxidized_frac < 0 or total_unoxidized_frac > 1:
+            raise ValueError("Invalid (slip + Cfug) combination.")
+
+        oxidized_frac = 1.0 - total_unoxidized_frac
+
+        # 연소부 gCO2eq/g
+        combustion = (
+            CfCO2 * gwp["CO2"] +
+            CfCH4 * gwp["CH4"] +
+            CfN2O * gwp["N2O"]
+        )
+        combustion_term = oxidized_frac * combustion
+
+        # 슬립·누출부 gCO2eq/g (연료 성분 자체의 GWP)
+        # 제공된 *_slip 가중치 사용: LNG 계열은 CH4_slip=1, 나머지는 보통 0
+        slip_CO2 = float(ttw.get("CO2_slip", 0.0))
+        slip_CH4 = float(ttw.get("CH4_slip", 0.0))
+        slip_N2O = float(ttw.get("N2O_slip", 0.0))
+        slip_emission = (slip_CO2 * gwp["CO2"] +
+                         slip_CH4 * gwp["CH4"] +
+                         slip_N2O * gwp["N2O"])
+        slip_term = total_unoxidized_frac * slip_emission
+
+        # gCO2eq/MJ
+        return round((combustion_term + slip_term) / LCV, 15)
 
     def calculate_wtw(fuel_type: str) -> float:
-        return round(GFI_wtt_factors.get(fuel_type, 0) + calculate_ttw(fuel_type), 5)
+        return round(GFI_wtt_factors.get(fuel_type, 0.0) + calculate_ttw(fuel_type), 15)
 
     def calculate_mixed_fuel(fossil_name, bio_name, fossil_ratio, fuel_defaults_GFI):
         bio_ratio = 1 - fossil_ratio
-        fossil_LHV = fuel_defaults_GFI[fossil_name]["LHV"]
-        bio_LHV = fuel_defaults_GFI[bio_name]["LHV"]
-        fossil_WtW = fuel_defaults_GFI[fossil_name]["WtW"]
-        bio_WtW = fuel_defaults_GFI[bio_name]["WtW"]
+        fossil_LHV = fuel_defaults_GFI[fossil_name]["LHV"]  # MJ/ton
+        bio_LHV    = fuel_defaults_GFI[bio_name]["LHV"]     # MJ/ton
+        fossil_WtW = fuel_defaults_GFI[fossil_name]["WtW"]  # gCO2eq/MJ
+        bio_WtW    = fuel_defaults_GFI[bio_name]["WtW"]     # gCO2eq/MJ
 
-        LHV_mix = fossil_LHV * fossil_ratio + bio_LHV * bio_ratio
-        total_emission = fossil_WtW * fossil_LHV * fossil_ratio + bio_WtW * bio_LHV * bio_ratio
-        WtW_mix = total_emission / LHV_mix
+        LHV_mix = fossil_LHV * fossil_ratio + bio_LHV * bio_ratio               # MJ/ton
+        total_emission = (fossil_WtW * fossil_LHV * fossil_ratio) + (bio_WtW * bio_LHV * bio_ratio)  # gCO2eq/ton
+        WtW_mix = total_emission / LHV_mix                                       # gCO2eq/MJ
 
-        return {"LHV": round(LHV_mix, 2), "WtW": round(WtW_mix, 8)}
+        return {"LHV": round(LHV_mix, 15), "WtW": round(WtW_mix, 15)}
 
-    # 최종 연료 기본값 구성
+    # 최종 연료 기본값 구성 (표시용 LHV는 MJ/ton: LCV(MJ/g) * 1,000,000 g/ton)
     fuel_defaults = {}
     for fuel in GFI_ttw_factors:
         LCV = GFI_ttw_factors[fuel]["LCV"]
-        LHV = round(LCV * 1_000_000, 0)
+        LHV = round(LCV * 1_000_000, 0)  # MJ/ton (표시 단위)
         WtW = calculate_wtw(fuel)
         fuel_defaults[fuel] = {"LHV": LHV, "WtW": WtW}
 
+    # 혼합연료(B24/B30) 계산
     fuel_defaults.update({
-        "B24(HSFO)": calculate_mixed_fuel("HSFO", "Bio(Fame)", 0.76,fuel_defaults),
-        "B30(HSFO)": calculate_mixed_fuel("HSFO", "Bio(Fame)", 0.7,fuel_defaults),
-        "B24(VLSFO)": calculate_mixed_fuel("VLSFO", "Bio(Fame)", 0.76,fuel_defaults),
-        "B30(VLSFO)": calculate_mixed_fuel("VLSFO", "Bio(Fame)", 0.7,fuel_defaults)
+        "B24(HSFO)":  calculate_mixed_fuel("HSFO",  "Bio(Fame)", 0.76, fuel_defaults),
+        "B30(HSFO)":  calculate_mixed_fuel("HSFO",  "Bio(Fame)", 0.70, fuel_defaults),
+        "B24(VLSFO)": calculate_mixed_fuel("VLSFO", "Bio(Fame)", 0.76, fuel_defaults),
+        "B30(VLSFO)": calculate_mixed_fuel("VLSFO", "Bio(Fame)", 0.70, fuel_defaults)
     })
 
     return fuel_defaults
