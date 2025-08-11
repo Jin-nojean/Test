@@ -1,3 +1,6 @@
+#GFI 계산기에 LNG DF 연료 추가하기
+
+
 #완성
 import streamlit as st
 import pandas as pd
@@ -24,7 +27,8 @@ def generate_GFI_fuel_defaults():
         "VLSFO": {"CO2": 3.114, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0402, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
         "HSFO": {"CO2": 3.114, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0402, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
         "LSMGO": {"CO2": 3.206, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0427, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
-        "LNG": {"CO2": 2.75, "CH4": 0, "N2O": 0.00011, "LCV": 0.0480, "SLIP": 0.0015, "RWD": 0, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
+        "LNG / LNG Otto (dual fuel medium speed)": {"CO2": 2.75, "CH4": 0, "N2O": 0.00011, "LCV": 0.0480, "SLIP": 0.0015, "RWD": 0, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
+        "LNG / LNG Diesel (dual fuel slow speed)": {"CO2": 2.750, "CH4": 0.00000, "N2O": 0.00011, "LCV": 0.0491, "SLIP": 0.002, "RWD": 0, "CO2_slip": 0.0, "CH4_slip": 1.0, "N2O_slip": 0.0},
         "LPG(Propane)": {"CO2": 3.0, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0463, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
         "LPG(Butane)": {"CO2": 3.03, "CH4": 0.00005, "N2O": 0.00018, "LCV": 0.0457, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0},
         "Bio(Fame)": {"CO2": 2.834, "CH4": 0, "N2O": 0, "LCV": 0.0372, "SLIP": 0, "RWD": 0, "CO2_slip": 0, "CH4_slip": 0, "N2O_slip": 0} #바이오디젤은 RED II 기준 / 아직 안나왔으니
@@ -34,7 +38,8 @@ def generate_GFI_fuel_defaults():
         "VLSFO": 16.8,
         "HSFO": 14.9,
         "LSMGO": 17.7,
-        "LNG": 18.5,#LNG는 RED II 기준 / 아직 안나왔으니
+        "LNG / LNG Otto (dual fuel medium speed)": 18.5,#LNG는 RED II 기준 / 아직 안나왔으니
+        "LNG / LNG Diesel (dual fuel slow speed)": 18.5,#LNG는 RED II 기준 / 아직 안나왔으니
         "LPG(Propane)": 7.8,#LPG는 RED II 기준 / 아직 안나왔으니
         "LPG(Butane)": 7.8,#LPG는 RED II 기준 / 아직 안나왔으니
         "Bio(Fame)": 20.8 - 2.834 / 0.0372# WtT값이 일단 안나옴
