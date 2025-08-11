@@ -19,8 +19,8 @@ def generate_GFI_fuel_defaults():
     # GFI 계산기용 GWP 값 / FeulEU Maritime 값 사용
     GFI_gwp_factors = {
         "CO2": 1,
-        "CH4": 25,
-        "N2O": 298
+        "CH4": 28,
+        "N2O": 265
     }
     # GFI 계산기용 TtW 계수 / MEPC80차 기준
     GFI_ttw_factors = {
