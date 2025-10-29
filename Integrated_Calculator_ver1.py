@@ -650,7 +650,7 @@ def step1_b100_required(row1, std, total_energy, total_emission, penalty, fuel_d
     fossil_emission = fossil_energy * gfi
 
     # 2) 이론값
-    if penalty > 0:
+    if penalty < 0:
         theo_b100 = fossil_energy / b100_lhv * 2  # 역외 사용 50% 반영을 고려한 2배
     else:
         theo_b100 = 0
@@ -698,7 +698,7 @@ def step2_b100_required(row2, std, total_energy, total_emission, penalty, final_
 
     # 이론값 계산
     fossil_energy2 = inside2 * lhv2 + outside2 * lhv2 * 0.5
-    if penalty > 0:
+    if penalty < 0:
         theo_b100_2 = fossil_energy2 / b100_lhv * 2
     else:
         theo_b100_2 = 0
@@ -757,7 +757,7 @@ def step3_b100_required(row3, std, total_energy, total_emission, penalty,
     fossil_emission3 = fossil_energy3 * gfi3
 
     # 이론값 계산
-    if penalty > 0:
+    if penalty < 0:
         theo_b100 = fossil_energy3 / b100_lhv * 2
     else:
         theo_b100 = 0
@@ -836,7 +836,7 @@ def step1_gas_required(row1, std, total_energy, total_emission, penalty, fuel_de
     fossil_energy = inside * lhv + outside * lhv * 0.5
     fossil_emission = fossil_energy * gfi
 
-    theo_lng = fossil_energy / lng_lhv * 2 if penalty > 0 else 0
+    theo_lng = fossil_energy / lng_lhv * 2 if penalty < 0 else 0
 
     cumulative_energy = total_energy
     cumulative_emission = total_emission * 1_000_000
@@ -873,7 +873,7 @@ def step2_gas_required(row2, std, total_energy, total_emission, penalty, final_l
     lng_gfi = fuel_defaults_FEUM[green_fuel_type]["WtW"]
 
     fossil_energy2 = inside2 * lhv2 + outside2 * lhv2 * 0.5
-    theo_lng_2 = fossil_energy2 / lng_lhv * 2 if penalty > 0 else 0
+    theo_lng_2 = fossil_energy2 / lng_lhv * 2 if penalty < 0 else 0
 
     cumulative_energy = total_energy
     cumulative_emission = total_emission * 1_000_000 + final_lng_step1 * lng_lhv * lng_gfi - final_lng_step1 * lng_lhv * 0.5 * gfi1
@@ -918,7 +918,7 @@ def step3_gas_required(row3, std, total_energy, total_emission, penalty,
     fossil_energy3 = inside3 * lhv3 + outside3 * lhv3 * 0.5
     fossil_emission3 = fossil_energy3 * gfi3
 
-    theo_lng = fossil_energy3 / lng_lhv * 2 if penalty > 0 else 0
+    theo_lng = fossil_energy3 / lng_lhv * 2 if penalty < 0 else 0
 
     cumulative_energy = total_energy + 0.5 * lng_result_step1 * lng_lhv + 0.5 * lng_result_step2 * lng_lhv
     cumulative_emission = total_emission * 1_000_000 \
