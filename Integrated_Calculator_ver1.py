@@ -443,6 +443,7 @@ def calculate_fueleu_result(fuel_data: list[dict],fuel_defaults_FEUM: dict) -> d
 
     # 계산 기준 발열량 계산
     def calc_adjusted_outside(row):
+        #fossil_fuels = ["HFO (Grades RME to RMK)", "LFO (Grades RMA to RMD)", "MDO MGO (Grades DMX to DMB)"]
         fossil_fuels = ["HFO (Grades RME to RMK)", "LFO (Grades RMA to RMD)", "MDO MGO (Grades DMX to DMB)"]
         if row["연료종류"] not in fossil_fuels:
             return row["역외"] * row["LHV"]  # 100% 반영 (친환경 연료)
